@@ -1,26 +1,36 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(pr2_social_gaze)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-set(ROS_BUILD_TYPE Debug)
+find_package(catkin REQUIRED COMPONENTS
+  rospy
+  rqt_gui
+  rqt_gui_py
+  actionlib
+  actionlib_msgs
+  geometry_msgs
+)
 
-# Automatically detect the action messages
-rosbuild_find_ros_package(actionlib_msgs)
-include(${actionlib_msgs_PACKAGE_PATH}/cmake/actionbuild.cmake)
-genaction()
+find_package(Boost REQUIRED COMPONENTS system)
 
-rosbuild_init()
+add_action_files(
+  DIRECTORY action
+  FILES Gaze.action
+)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+generate_messages(
+  DEPENDENCIES 
+  actionlib_msgs
+  std_msgs
+  geometry_msgs
+)
 
-rosbuild_genmsg()
+catkin_package(
+  CATKIN_DEPENDS
+  actionlib_msgs
+)
 
-rosbuild_add_roslaunch_check( launch/gaze.launch )
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+   ${Boost_INCLUDE_DIRS}
+)
+
