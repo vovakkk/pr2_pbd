@@ -12,7 +12,7 @@
         <label>Subgroup</group>
       </group>
       -->
-      <label>PR2 Programming by Demonstration</label>
+      <label>PR2 Programming By Demonstration</label>
       <icon type="theme">system-help</icon>
       <statustip>Use speech commands to start the interaction.</statustip>
     </qtgui>

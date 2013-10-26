@@ -14,11 +14,11 @@
 	<!-- time before dropping a transform that has not been received in a while -->
 	<param name="expiration_time" value="2.0" />
     </node>
-
+    
     <!-- rviz -->
     <node pkg="rviz" name="$(anon rviz-1)" type="rviz" respawn="false" output="screen"
 	  args="-d $(arg rviz_config_file) -s $(find pr2_interactive_manipulation_frontend)/images/splash.png"> 
-
+      
       <remap from="tf" to="tf_republished"/>
     </node>
 

@@ -43,12 +43,13 @@ generate_messages(
 )
 
 catkin_package(
-CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime
 )
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+
 
 roslaunch_add_file_check( launch/pbd_demo_desktop.launch )
 roslaunch_add_file_check( launch/pbd_demo_robot.launch ROBOT=sim )

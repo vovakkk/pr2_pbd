@@ -2,7 +2,7 @@
 
 import roslib
 roslib.load_manifest('pr2_pbd_gui')
-
+roslib.load_manifest('sound_play')
 
 import os
 import time
