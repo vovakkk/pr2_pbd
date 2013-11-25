@@ -1,3 +1,6 @@
+import roslib
+roslib.load_manifest('pr2_pbd_interaction')
+
 import os.path
 from os import listdir
 from os.path import isfile, join
@@ -13,78 +16,108 @@ class Action:
     TRAJECTORY = 3
     
     def get_file(self, action):
-        return Action.ACTION_DIRECTORY + str(action) + ".xml"
+        return Action.ACTION_DIRECTORY + str(action) + Action.FILE_EXTENSION
     
     def __init__(self, id=None):
         self.type = 0
-        self.name = "unnamed"
-        if (id == None):
-            '''Find next available id from files'''
-            id = 0
-            while (os.path.isfile(self.get_file(id))):
-                id += 1
-        else:
-            if (os.path.isfile(self.get_file(id))):
-                tree = ElementTree()
-                tree.parse(self.get_file(id))
-                root = tree.getroot()
-                self.type = int(root.get("type"))
-                self.name = root.find("name").text
-                self._read_type(root)
-        
+        self.name = ''
+        if ((id != None) and (os.path.isfile(self.get_file(id)))):
+            tree = ElementTree()
+            tree.parse(self.get_file(id))
+            root = tree.getroot()
+            self._read_action(root, self)
         self.id = id
     
-    def _read_type(self, root):
+    def _read_action(self, act_el, act_obj):
+        '''records data from the action xml element act_el into act_obj, returns act_obj'''
+        act_obj.type = int(act_el.get("type"))
+        act_obj.name = act_el.find("name").text
+        
         props = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ] }
-        def get_pose(el):
+        def read_arm(el):
             pose = {}
             for prop in props:
-                self.pose[prop] = {}
+                pose[prop] = {}
                 for prop2 in props[prop]:
-                    self.pose[prop][prop2] = (
-                        float(el.find(prop).find(prop2).text))
+                    pose[prop][prop2] = float(
+                            el.find(prop).find(prop2).text))
             return pose
-        if (self.type == Action.ACTION_QUEUE):
-            self.actions = map(lambda el: int(el.text), list(root.find("actions")))
-        elif (self.type == Action.POSE):
-            self.pose = get_pose(root.find("pose"))
-        elif (self.type == Action.GRIPPER):
-            self.is_open = bool(root.find("gripper").find("is_open").text)
-            self.arm_index = int(root.find("gripper").find("arm_index").text)
-        elif (self.type == Action.TRAJECTORY):
-            self.poses = map(lambda pose_el: get_pose, list(root.find("poses")))
+        
+        def read_arms(el):
+            return map(lambda a_ind: 
+                    get_pose(el.find("arm[@index='" + str(a_ind) + "']")), [0, 1])
+        
+        if (act_obj.type == Action.ACTION_QUEUE):
+            act_obj.actions = map(lambda el: 
+                    self._read_action(el, Action()) if el.get("inline") == "True"
+                    else Action(int(el.get("id"))), list(act_el.find("actions")))
+        elif (act_obj.type == Action.POSE):
+            act_obj.arms = read_arms(act_el.find("pose"))
+        elif (act_obj.type == Action.GRIPPER):
+            act_obj.is_open = bool(act_el.find("gripper").find("is_open").text)
+            act_obj.arm_index = int(act_el.find("gripper").find("arm_index").text)
+        elif (act_obj.type == Action.TRAJECTORY):
+            act_obj.poses = map(lambda pose_el: {
+                    "arms" : read_arms(pose_el),
+                    "timing" : int(pose_el.find("timing").text)
+                }, list(act_el.find("poses")))
+        return act_obj
     
-    def _write_type(self, builder):
+    def _write_action(self, builder, act_obj):
+        '''writes action from act_obj to builder'''
+        builder.start("name", {})
+        builder.data(act_obj.name)
+        builder.end("name")
+        
         props = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ] }
-        def write_pose(pose):
-            for prop in props:
-                builder.start(prop, {})
-                for prop2 in props[prop]:
-                    builder.start(prop2, {})
-                    builder.data(str(pose[prop][prop2]))
-                    builder.end(prop2)
-                builder.end(prop)
-        if (self.type == Action.ACTION_QUEUE):
+        def write_arms(arms):
+            builder.start("arms", {})
+            for a_ind in [0, 1]:
+                builder.start("arm", {"index" : a_ind})
+                for prop in props:
+                    builder.start(prop, {})
+                    for prop2 in props[prop]:
+                        builder.start(prop2, {})
+                        builder.data(str(arms[a_ind][prop][prop2]))
+                        builder.end(prop2)
+                    builder.end(prop)
+                builder.end("arm")
+            builder.end("arms")
+        
+        if (act_obj.type == Action.ACTION_QUEUE):
             builder.start("actions", {})
-            for action in self.actions:
-               builder.start("action", {})
-               builder.data(str(action))
-               builder.end("action")
+            for action in act_obj.actions:
+                if (action.id == None):
+                    builder.start("action", { "type" : str(action.type), "inline" : "True" })
+                    self._write_action(builder, action)
+                    builder.end("action")
+                else:
+                    builder.start("action", { "inline" : "False", "id" : str(action.id) })
+                    builder.end("action")
             builder.end("actions")
-        elif (self.type == Action.POSE):
-            write_pose(self.pose)
-        elif (self.type == Action.GRIPPER):
+        elif (act_obj.type == Action.POSE):
+            builder.start("pose", {})
+            write_arms(act_obj.arms)
+            builder.end("pose")
+        elif (act_obj.type == Action.GRIPPER):
             builder.start("gripper", {})
             builder.start("is_open", {})
-            builder.data(str(self.is_open))
+            builder.data(str(act_obj.is_open))
             builder.end("is_open")
             builder.start("arm_index", {})
-            builder.data(str(self.arm_index))
+            builder.data(str(act_obj.arm_index))
             builder.end("arm_index")
             builder.end("gripper")
-        elif (self.type == Action.TRAJECTORY):
-            for pose in self.poses:
-                write_pose(pose)
+        elif (act_obj.type == Action.TRAJECTORY):
+            builder.start("poses", {})
+            for pose in act_obj.poses:
+                builder.start("pose", {})
+                write_arms(pose.arms)
+                builder.start("timing", {})
+                builder.data(str(pose.timing))
+                builder.end("timing")
+                builder.end("pose")
+            builder.end("poses")
     
     @staticmethod
     def get_saved_actions():
@@ -97,13 +130,20 @@ class Action:
     
     def save(self):
         '''saves action to file'''
+        if (self.id == None):
+            self.id = 0
+            while (os.path.isfile(self.get_file(self.id))):
+                self.id += 1
         builder = TreeBuilder()
-        builder.start("action", { "id" : str(self.id), "type" : str(self.type) })
-        builder.start("name", {})
-        builder.data(self.name)
-        builder.end("name")
-        self._write_type(builder)
+        builder.start("action", { "id" : str(self.id), "type" : str(self.type),
+                                  "inline" : "True" })
+        self._write_action(builder, self)
         builder.end("action")
         doc = ElementTree(builder.close())
         doc.write(self.get_file(self.id))
     
+    def write_in(self, builder):
+        '''writes xml for this action including action element'''
+        builder.start("action", { "type" : str(self.type), "inline" : "True" });
+        self._write_action(builder);
+        builder.end("action");

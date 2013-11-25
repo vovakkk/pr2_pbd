@@ -44,9 +44,8 @@ class Response:
                  RobotSound.EXECUTION_ENDED, RobotSound.OTHER,
                  RobotSound.STARTING_EXECUTION, RobotSound.SUCCESS]
 
-    def __init__(self, function_to_call, function_param):
+    def __init__(self, function_to_call):
         self.function_to_call = function_to_call
-        self.function_param = function_param
 
         if (Response.gaze_client == None):
             Response.gaze_client = SimpleActionClient('gaze_action',
@@ -61,7 +60,7 @@ class Response:
 
     def respond(self):
         ''' Triggers the defined response'''
-        speech_resp, gaze_resp = self.function_to_call(self.function_param)
+        speech_resp, gaze_resp = self.function_to_call()
         # Speech response
         if (speech_resp != None):
             Response.say(speech_resp)
