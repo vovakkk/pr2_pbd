@@ -1,6 +1,8 @@
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
+from ObjectType import ObjectType
+
 import os.path
 from os import listdir
 from os.path import isfile, join
@@ -53,6 +55,7 @@ class Action:
                     else Action(int(el.get("id"))), list(act_el.find("actions")))
         elif (act_obj.type == Action.POSE):
             act_obj.arms = read_arms(act_el.find("pose"))
+            act_obj.target = ObjectType(int(el.find("target/type_id").text))
         elif (act_obj.type == Action.GRIPPER):
             act_obj.is_open = bool(act_el.find("gripper").find("is_open").text)
             act_obj.arm_index = int(act_el.find("gripper").find("arm_index").text)
@@ -99,6 +102,11 @@ class Action:
             builder.start("pose", {})
             write_arms(act_obj.arms)
             builder.end("pose")
+            builder.start("target", {})
+            builder.start("type_id", {})
+            builder.data(act_obj.target.type_id)
+            builder.end("type_id")
+            builder.end("target")
         elif (act_obj.type == Action.GRIPPER):
             builder.start("gripper", {})
             builder.start("is_open", {})
