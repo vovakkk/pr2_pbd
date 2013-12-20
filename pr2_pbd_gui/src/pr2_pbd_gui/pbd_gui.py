@@ -12,13 +12,14 @@ from std_msgs.msg import String
 from qt_gui.plugin import Plugin
 from python_qt_binding import QtGui,QtCore
 from python_qt_binding.QtGui import QWidget, QFrame
-from python_qt_binding.QtGui import QGroupBox, QIcon, QTableView
+from python_qt_binding.QtGui import QGroupBox, QIcon, QTableView, QStandardItem
 from python_qt_binding.QtCore import Slot, qDebug, QSignalMapper, QTimer, qWarning, Signal
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_pbd_interaction.msg import GuiCommand
 from sound_play.msg import SoundRequest
 from pr2_pbd_interaction.msg import ExperimentState, ActionStep
 from pr2_pbd_interaction.srv import GetExperimentState
+from Action import Action
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -130,19 +131,19 @@ class PbDGUI(Plugin):
         self.l_model = QtGui.QStandardItemModel(self)
         self.l_view = self._create_table_view(self.l_model,
                                               self.l_row_clicked_cb)
-        self.r_model = QtGui.QStandardItemModel(self)
-        self.r_view = self._create_table_view(self.r_model,
-                                              self.r_row_clicked_cb)
+        #self.r_model = QtGui.QStandardItemModel(self)
+        #self.r_view = self._create_table_view(self.r_model,
+                                              #self.r_row_clicked_cb)
 
         self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 0, 2, 3)
-        self.stepsGrid.addItem(QtGui.QSpacerItem(10, 10), 0, 1, 2, 3)
-        self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 2, 2, 3)
+        #self.stepsGrid.addItem(QtGui.QSpacerItem(10, 10), 0, 1, 2, 3)
+        #self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 2, 2, 3)
         
         self.stepsGrid.addWidget(QtGui.QLabel('Left Arm'), 0, 0)
-        self.stepsGrid.addWidget(QtGui.QLabel('Right Arm'), 0, 2)
+        #self.stepsGrid.addWidget(QtGui.QLabel('Right Arm'), 0, 2)
 
         self.stepsGrid.addWidget(self.l_view, 1, 0)
-        self.stepsGrid.addWidget(self.r_view, 1, 2)
+        #self.stepsGrid.addWidget(self.r_view, 1, 2)
         
         stepsBoxLayout = QtGui.QHBoxLayout()
         stepsBoxLayout.addLayout(self.stepsGrid)
@@ -230,11 +231,12 @@ class PbDGUI(Plugin):
         rospy.loginfo('Will wait for the experiment state service...')
         rospy.wait_for_service('get_experiment_state')
         exp_state_srv = rospy.ServiceProxy('get_experiment_state',
-                                                 GetExperimentState)
+                                                GetExperimentState)
         rospy.loginfo('Got response from the experiment state service...')
 
         response = exp_state_srv()
-        self.update_state(response.state)
+        #response =  { "action_xml" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
+        self.update_state(response)
         
     def _create_table_view(self, model, row_click_cb):
         proxy = QtGui.QSortFilterProxyModel(self)
@@ -269,44 +271,62 @@ class PbDGUI(Plugin):
         btn.clicked.connect(self.command_cb)
         return btn
 
+    def disp_action(self, act, pref):
+        if (act.type == Action.ACTION_QUEUE):
+            self.l_model.appendRow(QStandardItem(pref + act.name))
+            for ch_act in act.actions:
+                self.disp_action(ch_act, "-" + pref)
+        elif (act.type == Action.POSE):
+            self.l_model.appendRow(QStandardItem(pref + " Pose"))
+        elif (act.type == Action.GRIPPER):
+            self.l_model.appendRow(QStandardItem(pref + " Gripper"))
+        elif (act.type == Action.TRAJECTORY):
+            self.l_model.appendRow(QStandardItem(pref + " Trajectory"))
+        
     def update_state(self, state):
         qWarning('Received new state')
         
-        n_actions = len(self.actionIcons.keys())
-        if n_actions < state.n_actions:
-            for i in range(n_actions, state.n_actions):
-                self.new_action()
+        #n_actions = len(self.actionIcons.keys())
+        #if n_actions < state.n_actions:
+            #for i in range(n_actions, state.n_actions):
+                #self.new_action()
 
-        if (self.currentAction != (state.i_current_action - 1)):
-            self.delete_all_steps()
-            self.action_pressed(state.i_current_action - 1, False)
+        #if (self.currentAction != (state.i_current_action - 1)):
+            #self.delete_all_steps()
+            #self.action_pressed(state.i_current_action - 1, False)
 
-        n_steps = self.n_steps()
-        if (n_steps < state.n_steps):
-            for i in range(n_steps, state.n_steps):
-                self.save_pose(frameType=ord(state.frame_types[i]))
-        elif (n_steps > state.n_steps):
-            n_to_remove = n_steps - state.n_steps
-            self.r_model.invisibleRootItem().removeRows(state.n_steps,
-                                                      n_to_remove)
-            self.l_model.invisibleRootItem().removeRows(state.n_steps,
-                                                      n_to_remove)
+        #n_steps = self.n_steps()
+        #if (n_steps < state.n_steps):
+            #for i in range(n_steps, state.n_steps):
+                #self.save_pose(frameType=ord(state.frame_types[i]))
+        #elif (n_steps > state.n_steps):
+            #n_to_remove = n_steps - state.n_steps
+            #self.r_model.invisibleRootItem().removeRows(state.n_steps,
+                                                      #n_to_remove)
+            #self.l_model.invisibleRootItem().removeRows(state.n_steps,
+                                                      #n_to_remove)
         
         ## TODO: DEAL with the following arrays!!!
-        state.r_gripper_states
-        state.l_gripper_states
-        state.r_ref_frames
-        state.l_ref_frames
-        state.objects
+        #state.r_gripper_states
+        #state.l_gripper_states
+        #state.r_ref_frames
+        #state.l_ref_frames
+        #state.objects
             
-        if (self.currentStep != state.i_current_step):
-            if (self.n_steps() > 0):
-                self.currentStep = state.i_current_step
-                arm_index, index = self.get_arm_and_index(self.currentStep)
-                if (arm_index == 0):
-                    self.r_view.selectRow(index)
-                else:
-                    self.l_view.selectRow(index)
+        #if (self.currentStep != state.i_current_step):
+            #if (self.n_steps() > 0):
+                #self.currentStep = state.i_current_step
+                #arm_index, index = self.get_arm_and_index(self.currentStep)
+                #if (arm_index == 0):
+                    #self.r_view.selectRow(index)
+                #else:
+                    #self.l_view.selectRow(index)
+        
+        '''New code to deal with xml-ed actions'''
+        act = Action()
+        act.from_string(state['action_xml'])
+        self.l_model.clear()
+        self.disp_action(act, '')
 
     def get_frame_type(self, fr_type):
         if (fr_type > 1):

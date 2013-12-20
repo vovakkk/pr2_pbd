@@ -8,5 +8,7 @@
 #string[] r_ref_frames
 #string[] l_ref_frames
 #pr2_pbd_interaction/Object[] objects
+string action_xml
+string[] action_names
 uint8 selected_action
 uint8 selected_step

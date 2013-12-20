@@ -139,7 +139,7 @@ class World:
                 self._im_server.applyChanges()
 
     def receieve_object_info(self, object_list):
-        '''Callback function to receive object info'''
+        '''Callback function to receive object infos'''
         self._lock.acquire()
         rospy.loginfo('Received recognized object list.')
         if (len(object_list.graspable_objects) > 0):
