@@ -324,7 +324,7 @@ class PbDGUI(Plugin):
         
         '''New code to deal with xml-ed actions'''
         act = Action()
-        act.from_string(state['action_xml'])
+        act.from_string(state.action_xml)#state['action_xml'])
         self.l_model.clear()
         self.disp_action(act, '')
 

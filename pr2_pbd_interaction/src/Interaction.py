@@ -234,7 +234,7 @@ class Interaction:
             act_step.type = Action.GRIPPER
             act_step.gripper_state = gripper_state
             act_step.arm_index = arm_index
-            self.session.append_action_step(act_step)
+            self.session.add_step_to_action(act_step)
             #states = self._get_arm_states()
             #step = ActionStep()
             #step.type = ActionStep.ARM_TARGET

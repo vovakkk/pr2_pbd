@@ -294,7 +294,7 @@ class Interaction:
                                         .ee_pose.orientation.z,
                                     "w" : pose.arms[a_ind]
                                         .ee_pose.orientation.w
-                                } } for a_ind in [0, 1] })
+                                } } for a_ind in [0, 1] }, Interaction._arm_trajectory)
                                                     
             self.session.add_step_to_action(traj_step)
             
