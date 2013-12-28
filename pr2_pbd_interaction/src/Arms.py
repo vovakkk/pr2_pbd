@@ -86,7 +86,7 @@ class Arms:
         for i in range(self.action.n_frames()):
             # For each step check step type
             # If arm target action
-            if (self.action.seq.seq[i].type == ActionStep.ARM_TARGET):
+            if (self.action.actions[i].type == ActionStep.ARM_TARGET):
                 # Find frames that are relative and convert to absolute
                 r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
                                         self.action.seq.seq[i].armTarget.rArm,
@@ -123,7 +123,7 @@ class Arms:
     def solve_ik_for_arm(arm_index, arm_state, cur_arm_pose=None):
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object
-        if (arm_state.refFrame == ArmState.OBJECT):
+        if (False):#arm_state.refFrame == ArmState.OBJECT):
 	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is relative')
             solution = ArmState()
             target_pose = World.transform(arm_state.ee_pose,
@@ -139,11 +139,11 @@ class Arms:
                                         target_pose.orientation)
                 solution.joint_pose = target_joints
                 return solution, True
-        elif (arm_state.refFrame == ArmState.ROBOT_BASE):
+        elif (True):# (arm_state.refFrame == ArmState.ROBOT_BASE):
 	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
             target_joints = Arms.arms[arm_index].get_ik_for_ee(
-                                                    arm_state.ee_pose,
-                                                    arm_state.joint_pose)
+                                                    arm_state,
+                                                    None)
             if (target_joints == None):
                 rospy.logerr('No IK for absolute end-effector pose.')
                 return arm_state, False
@@ -214,33 +214,52 @@ class Arms:
         else:
             self.status = ExecutionStatus.NO_IK
 
+    def execute_rec_action(self, action):
+        if (action.type == Action.ACTION_QUEUE):
+            for act in action.actions:
+                execute_rec_action(act)
+        elif (action.type == Action.POSE):
+            r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
+                                    action.arms[0])
+            l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
+                                    action.arms[1])
+
+            self.move_to_joints(r_arm, l_arm)
+        elif (action.type == Action.GRIPPER):
+            pass
+        elif (action.type == Action.TRAJECTORY):
+            pass
+        
+            
     def execute_action(self):
         ''' Function to replay the demonstrated two-arm action
         of type ProgrammedAction'''
         self.status = ExecutionStatus.EXECUTING
         # Check if the very first precondition is met
-        action_step = self.action.get_step(0)
-        if (not Arms.is_condition_met(action_step.preCond)):
-            rospy.logwarn('First precond is not met, first make sure ' +
-                          'the robot is ready to execute action ' +
-                          '(hand object or free hands).')
-            self.status = ExecutionStatus.CONDITION_ERROR
-        else:
-            # Check that all parts of the action are reachable
-            if (not self.solve_ik_for_action()):
-                rospy.logwarn('Problems in finding IK solutions...')
-                self.status = ExecutionStatus.NO_IK
-            else:
-                Arms.set_arm_mode(0, ArmMode.HOLD)
-                Arms.set_arm_mode(1, ArmMode.HOLD)
-                self._loop_through_action_steps()
+        #action_step = self.action.get_step(0)
+        #if (not Arms.is_condition_met(action_step.preCond)):
+            #rospy.logwarn('First precond is not met, first make sure ' +
+                          #'the robot is ready to execute action ' +
+                          #'(hand object or free hands).')
+            #self.status = ExecutionStatus.CONDITION_ERROR
+        #else:
+        # Check that all parts of the action are reachable
+        #if (not self.solve_ik_for_action()):
+            #rospy.logwarn('Problems in finding IK solutions...')
+            #self.status = ExecutionStatus.NO_IK
+        #else:
+            #Arms.set_arm_mode(0, ArmMode.HOLD)
+            #Arms.set_arm_mode(1, ArmMode.HOLD)
+            #self._loop_through_action_steps()
 
-            Arms.arms[0].reset_movement_history()
-            Arms.arms[1].reset_movement_history()
-
-            if self.status == ExecutionStatus.EXECUTING:
-                self.status = ExecutionStatus.SUCCEEDED
-                rospy.loginfo('Skill execution has succeeded.')
+        #Arms.arms[0].reset_movement_history()
+        #Arms.arms[1].reset_movement_history()
+        
+        self.execute_rec_action(self.action)
+        
+        if self.status == ExecutionStatus.EXECUTING:
+            self.status = ExecutionStatus.SUCCEEDED
+            rospy.loginfo('Skill execution has succeeded.')
 
     def _loop_through_action_steps(self):
         ''' Goes through the steps of the current action'''
