@@ -19,6 +19,7 @@ from Response import Response
 from Arms import Arms
 from Arm import ArmMode
 from Action import Action
+from ObjectType import ObjectType
 from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, ArmTarget, Object
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
@@ -50,7 +51,7 @@ class Interaction:
 
         self.responses = {
             Command.TEST_MICROPHONE: Response(partial(Interaction.empty_response,
-                                [RobotSpeech.TEST_RESPONSE, GazeGoal.NOD]),
+                                [RobotSpeech.TEST_RESPONSE, GazeGoal.NOD])),
             Command.RELAX_RIGHT_ARM: Response(partial(self.relax_arm, 0)),
             Command.RELAX_LEFT_ARM: Response(partial(self.relax_arm, 1)),
             Command.OPEN_RIGHT_HAND: Response(partial(self.open_hand, 0)),
@@ -272,7 +273,7 @@ class Interaction:
             
             traj_step.poses = map(lambda pose: { "timing" : pose.timing
                                 - waited_time + rospy.Duration(0.1),
-                                "arms" : { "position" : {
+                                "arms" : [{ "position" : {
                                     "x" : pose.arms[a_ind]
                                         .ee_pose.position.x -
                                         _relative_motion_start[a_ind].position.x,
@@ -291,7 +292,7 @@ class Interaction:
                                         .ee_pose.orientation.z,
                                     "w" : pose.arms[a_ind]
                                         .ee_pose.orientation.w
-                                } } for a_ind in [0, 1] }, Interaction._arm_trajectory)
+                                } } for a_ind in [0, 1] ] }, Interaction._arm_trajectory)
                                                     
             self.session.add_step_to_action(traj_step)
             
@@ -318,6 +319,7 @@ class Interaction:
             step = Action()
             step.type = Action.POSE
             step.arms = self._get_arm_states()
+            step.target = ObjectType(0)
             self.session.add_step_to_action(step)
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
@@ -328,17 +330,15 @@ class Interaction:
         '''Returns the current arms states in the right format'''
         abs_ee_poses = map(Arms.get_ee_state, [0, 1])
         joint_poses = map(Arms.get_joint_state, [0, 1])
-
-        states = []
+                
+        states = [None, None]
 
         for arm_index in [0, 1]:
             nearest_obj = self.world.get_nearest_object(
                                                 abs_ee_poses[arm_index])
 
             if (nearest_obj == None):
-                states[arm_index] = ArmState(ArmState.ROBOT_BASE,
-                                    abs_ee_poses[arm_index],
-                                    joint_poses[arm_index], Object())
+                states[arm_index] = Arms.convert_from_state(abs_ee_poses[arm_index])
             else:
                 # Relative
                 rel_ee_pose = World.transform(
@@ -347,6 +347,7 @@ class Interaction:
                 states[arm_index] = ArmState(ArmState.OBJECT,
                                     rel_ee_pose,
                                     joint_poses[arm_index], nearest_obj)
+        
         return states
 
     def execute_action(self):

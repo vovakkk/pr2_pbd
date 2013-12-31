@@ -236,7 +236,7 @@ class PbDGUI(Plugin):
 
         response = exp_state_srv()
         #response =  { "action_xml" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
-        self.update_state(response)
+        self.update_state(response.state)
         
     def _create_table_view(self, model, row_click_cb):
         proxy = QtGui.QSortFilterProxyModel(self)
@@ -323,10 +323,11 @@ class PbDGUI(Plugin):
                     #self.l_view.selectRow(index)
         
         '''New code to deal with xml-ed actions'''
-        act = Action()
-        act.from_string(state.action_xml)#state['action_xml'])
-        self.l_model.clear()
-        self.disp_action(act, '')
+        if (state.action_xml != ""):
+            act = Action()
+            act.from_string(state.action_xml)#state['action_xml'])
+            self.l_model.clear()
+            self.disp_action(act, '')
 
     def get_frame_type(self, fr_type):
         if (fr_type > 1):

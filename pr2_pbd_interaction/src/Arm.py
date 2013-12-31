@@ -356,7 +356,9 @@ class Arm:
             rospy.logwarn('Could not find IK solution with preferred seed,' +
                           'will try default seed.')
             joints = self._solve_ik(ee_pose)
-
+        
+        return joints
+        
         if joints == None:
             rospy.logwarn('IK out of bounds, will use the seed directly.')
         else:

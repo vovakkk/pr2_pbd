@@ -1,6 +1,6 @@
 '''Everything related to an experiment session'''
 
-from ProgrammedAction import ProgrammedAction
+from Action import Action
 import rospy
 import os
 import yaml
@@ -14,7 +14,6 @@ class Session:
 
     def __init__(self, is_debug=False):#def __init__(self, object_list, is_debug=False):
         #self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
-
         self._exp_number = None
         self._selected_step = 0
         #self._object_list = object_list
@@ -44,7 +43,7 @@ class Session:
 
         self._state_publisher = rospy.Publisher('experiment_state',
                                                 ExperimentState)
-        rospy.Service('get_experiment_state', GetExperimentState,
+        self._state_service = rospy.Service('get_experiment_state', GetExperimentState,
                       self.get_experiment_state_cb)
 
         self._update_experiment_state()
@@ -67,9 +66,11 @@ class Session:
     def _get_experiment_state(self):
         ''' Creates a message with the latest state'''
         return ExperimentState(
-            self.actions[self.current_action_index].to_string(),
+            (self.actions[self.current_action_index].to_string() 
+            if self.current_action_index != None
+            else ""),
             map(lambda act: act.name, self.actions),
-            self.current_action_index,
+            0 if self.current_action_index == None else self.current_action_index,
             self._selected_step)
         #return ExperimentState(self.n_actions(),
                     #self.current_action_index,
@@ -215,7 +216,7 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
 
-    def add_step_to_action(self, step_act, object_list):
+    def add_step_to_action(self, step_act):
         '''Add a new step to the current action'''
         if (self.current_action_index != None):
             self.actions[self.current_action_index].actions.insert(self._selected_step, step_act)
@@ -230,7 +231,7 @@ class Session:
         if (self.current_action_index != None):
             if (self._selected_step > 0):
                 self._selected_step -= 1
-                self.actions[self.current_action_index].actions.remove(self._selected_step)
+                self.actions[self.current_action_index].actions.pop(self._selected_step)
             else:
                 rospy.logwarn('Trying to delete step when selected index is zero')
         else:

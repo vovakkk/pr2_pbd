@@ -5,14 +5,15 @@ import rospy
 
 import time
 import threading
-from pr2_pbd_interaction.msg import ArmState, GripperState
+from pr2_pbd_interaction.msg import ArmState, GripperState, Object
 from pr2_pbd_interaction.msg import ActionStep, Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
 from geometry_msgs.msg import Pose, Point, Quaternion
 from Response import Response
-from World import World
+from World import World, Object
 from Arm import Arm, ArmMode
+from Action import Action
 
 
 class Arms:
@@ -36,7 +37,27 @@ class Arms:
         Arms.arms[Side.RIGHT].close_gripper()
         Arms.arms[Side.LEFT].close_gripper()
         self.status = ExecutionStatus.NOT_EXECUTING
-
+    
+    @staticmethod
+    def convert_from_state(arm_state):
+        return { "position" :
+                { "x" : arm_state.position.x,
+                  "y" : arm_state.position.y,
+                  "z" : arm_state.position.z
+                }, "orientation": {
+                  "x" : arm_state.orientation.x,    
+                  "y" : arm_state.orientation.y,
+                  "z" : arm_state.orientation.z,
+                  "w" : arm_state.orientation.w
+                } }
+    
+    @staticmethod
+    def convert_to_state(dic):
+        return Pose(Point(dic["position"]["x"],
+                    dic["position"]["y"], dic["position"]["z"]),
+                Quaternion(dic["orientation"]["x"], dic["orientation"]["y"],
+                    dic["orientation"]["z"], dic["orientation"]["w"] ))
+    
     @staticmethod
     def set_arm_mode(arm_index, mode):
         '''Set arm to stiff or relaxed'''
@@ -217,12 +238,14 @@ class Arms:
     def execute_rec_action(self, action):
         if (action.type == Action.ACTION_QUEUE):
             for act in action.actions:
-                execute_rec_action(act)
+                self.execute_rec_action(act)
         elif (action.type == Action.POSE):
+            rospy.logwarn(Arms.convert_to_state(action.arms[0]))
+            rospy.logwarn(Arms.convert_to_state(action.arms[1]))
             r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
-                                    action.arms[0])
+                                    Arms.convert_to_state(action.arms[0]))
             l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
-                                    action.arms[1])
+                                    Arms.convert_to_state(action.arms[1]))
 
             self.move_to_joints(r_arm, l_arm)
         elif (action.type == Action.GRIPPER):
