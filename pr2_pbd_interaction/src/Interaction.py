@@ -30,7 +30,7 @@ from pr2_social_gaze.msg import GazeGoal
 class Interaction:
     '''Finite state machine for the human interaction'''
 
-    _is_programming = True
+    _is_programming = False
     _is_recording_motion = False
     _arm_trajectory = None
 
@@ -179,12 +179,9 @@ class Interaction:
     def delete_all_steps(self):
         '''Deletes all steps in the current action'''
         if (Interaction._is_programming):
-            if self.session.n_frames() > 0:
-                self.session.clear_current_action()
-                self._undo_function = self._resume_all_steps
-                return [RobotSpeech.SKILL_CLEARED, GazeGoal.NOD]
-            else:
-                return [RobotSpeech.SKILL_EMPTY, None]
+            self.session.clear_current_action()
+            self._undo_function = self._resume_all_steps
+            return [RobotSpeech.SKILL_CLEARED, GazeGoal.NOD]
         else:
             return ['Action ' + str(self.session.current_action_index) +
                     RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
@@ -234,7 +231,7 @@ class Interaction:
             act_step.type = Action.GRIPPER
             act_step.gripper_state = gripper_state
             act_step.arm_index = arm_index
-            self.session.append_action_step(act_step)
+            self.session.add_step_to_action(act_step)
             #states = self._get_arm_states()
             #step = ActionStep()
             #step.type = ActionStep.ARM_TARGET
@@ -313,7 +310,7 @@ class Interaction:
                                 ArmState(ArmState.ROBOT_BASE,
                                         Arms.get_ee_state(a_ind),
                                         Arms.get_joint_state(a_ind), Object()), [0, 1]),
-                "timing" : rospy.Time.now())
+                "timing" : rospy.Time.now()})
 
     def save_step(self):
         '''Saves current arm state as an action step'''
@@ -354,21 +351,21 @@ class Interaction:
 
     def execute_action(self):
         '''Starts the execution of the current action'''
-        if (self.session.n_actions() > 0):
+        if (len(self.session.actions) > 0):
             if (self.session.n_frames() > 0):
                 #self.session.save_current_action()
                 action = self.session.get_current_action()
-
-                if (action.is_object_required()):
-                    if (self.world.update_object_pose()):
-                        self.session.get_current_action().update_objects(
-                                                self.world.get_frame_list())
-                        self.arms.start_execution(action)
-                    else:
-                        return [RobotSpeech.OBJECT_NOT_DETECTED,
-                                GazeGoal.SHAKE]
-                else:
-                    self.arms.start_execution(action)
+                self.arms.start_execution(action)
+                #if (action.is_object_required()):
+                    #if (self.world.update_object_pose()):
+                        #self.session.get_current_action().update_objects(
+                                                #self.world.get_frame_list())
+                        #self.arms.start_execution(action)
+                    #else:
+                        #return [RobotSpeech.OBJECT_NOT_DETECTED,
+                                #GazeGoal.SHAKE]
+                #else:
+                    #self.arms.start_execution(action)
 
                 return [RobotSpeech.START_EXECUTION + ' ' +
                         str(self.session.current_action_index), None]
@@ -454,28 +451,28 @@ class Interaction:
         if (Interaction._is_recording_motion):
             self._save_arm_to_trajectory()
 
-        is_world_changed = self.world.update()
-        if (self.session.n_actions() > 0):
-            action = self.session.get_current_action()
-            action.update_viz()
-            r_target = action.get_requested_targets(0)
-            if (r_target != None):
-                self.arms.start_move_to_pose(r_target, 0)
-                action.reset_targets(0)
-            l_target = action.get_requested_targets(1)
-            if (l_target != None):
-                self.arms.start_move_to_pose(l_target, 1)
-                action.reset_targets(1)
+        #is_world_changed = self.world.update()
+        #if (self.session.n_actions() > 0):
+            #action = self.session.get_current_action()
+            #action.update_viz()
+            #r_target = action.get_requested_targets(0)
+            #if (r_target != None):
+                #self.arms.start_move_to_pose(r_target, 0)
+                #action.reset_targets(0)
+            #l_target = action.get_requested_targets(1)
+            #if (l_target != None):
+                #self.arms.start_move_to_pose(l_target, 1)
+                #action.reset_targets(1)
 
-            action.delete_requested_steps()
+            #action.delete_requested_steps()
 
-            states = self._get_arm_states()
-            action.change_requested_steps(states[0], states[1])
+            #states = self._get_arm_states()
+            #action.change_requested_steps(states[0], states[1])
 
-            if (is_world_changed):
-                rospy.loginfo('The world has changed.')
-                self.session.get_current_action().update_objects(
-                                        self.world.get_frame_list())
+            #if (is_world_changed):
+                #rospy.loginfo('The world has changed.')
+                #self.session.get_current_action().update_objects(
+                                        #self.world.get_frame_list())
 
         time.sleep(0.1)
 

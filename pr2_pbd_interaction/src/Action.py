@@ -172,3 +172,8 @@ class Action:
         tree = ElementTree(elementfromstring(xml_str))
         root = tree.getroot()
         self._read_action(root, self)
+        
+    def copy(self):
+        copy = Action()
+        copy.from_string(self.to_string())
+        return copy
