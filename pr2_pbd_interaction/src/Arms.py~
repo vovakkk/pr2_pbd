@@ -53,10 +53,11 @@ class Arms:
     
     @staticmethod
     def convert_to_state(dic):
-        return Pose(Point(dic["position"]["x"],
+        return ArmState(ArmState.ROBOT_BASE, Pose(Point(dic["position"]["x"],
                     dic["position"]["y"], dic["position"]["z"]),
                 Quaternion(dic["orientation"]["x"], dic["orientation"]["y"],
-                    dic["orientation"]["z"], dic["orientation"]["w"] ))
+                    dic["orientation"]["z"], dic["orientation"]["w"] )), 
+                    [0, 0, 0, 0, 0, 0, 0, 0], Object())
     
     @staticmethod
     def set_arm_mode(arm_index, mode):
@@ -161,9 +162,9 @@ class Arms:
                 solution.joint_pose = target_joints
                 return solution, True
         elif (True):# (arm_state.refFrame == ArmState.ROBOT_BASE):
-	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
+	    rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
             target_joints = Arms.arms[arm_index].get_ik_for_ee(
-                                                    arm_state,
+                                                    arm_state.ee_pose,
                                                     None)
             if (target_joints == None):
                 rospy.logerr('No IK for absolute end-effector pose.')
@@ -240,12 +241,12 @@ class Arms:
             for act in action.actions:
                 self.execute_rec_action(act)
         elif (action.type == Action.POSE):
-            rospy.logwarn(Arms.convert_to_state(action.arms[0]))
+            #rospy.loginfo(Arms.convert_to_state(action.arms[0]))
             r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
                                     Arms.convert_to_state(action.arms[0]))
             l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
                                     Arms.convert_to_state(action.arms[1]))
-
+                                    
             self.move_to_joints(r_arm, l_arm)
         elif (action.type == Action.GRIPPER):
             pass
