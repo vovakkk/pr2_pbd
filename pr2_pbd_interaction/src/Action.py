@@ -3,11 +3,15 @@ roslib.load_manifest('pr2_pbd_interaction')
 
 from ObjectType import ObjectType
 
+#functional code
+from functools import partial
+
 import os.path
 from os import listdir
 from os.path import isfile, join
 from xml.etree.ElementTree import ElementTree, TreeBuilder, tostring as elementtostring
 from xml.etree.ElementTree import fromstring as elementfromstring
+import rospy
 
 class Action:
     ACTION_DIRECTORY = "/home/vladimir/pbd_actions/"
@@ -17,35 +21,48 @@ class Action:
     POSE = 1
     GRIPPER = 2
     TRAJECTORY = 3
+    ARM_PROPS = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ]}
     
     def get_file(self, action):
         return Action.ACTION_DIRECTORY + str(action) + Action.FILE_EXTENSION
     
-    def __init__(self, id=None):
+    @staticmethod
+    def get_saved_actions():
+        return map(Action, 
+            filter(lambda f: f.endswith(Action.FILE_EXTENSION),
+                filter(isfile, 
+                    map(partial(join, Action.ACTION_DIRECTORY), 
+                        listdir(Action.ACTION_DIRECTORY)))))
+    
+    def __init__(self, file=None, id=None):
         self.type = 0
         self.name = ''
-        if ((id != None) and (os.path.isfile(self.get_file(id)))):
+        if (id != None):
+            file = self.get_file(id)
+        self.id = id
+        if ((file != None) and (os.path.isfile(file))):
             tree = ElementTree()
-            tree.parse(self.get_file(id))
+            tree.parse(file)
             root = tree.getroot()
             self._read_action(root, self)
-        self.id = id
     
     def _read_action(self, act_el, act_obj):
         '''records data from the action xml element act_el into act_obj, returns act_obj'''
         act_obj.type = int(act_el.get("type"))
+        if ("id" in act_el.attrib):
+            act_obj.id = int(act_el.attrib["id"])
         act_obj.name = act_el.find("name").text
         if (act_obj.name == None):
             act_obj.name = ""
         
-        props = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ] }
         def read_arm(el):
             pose = {}
-            for prop in props:
+            for prop in Action.ARM_PROPS:
                 pose[prop] = {}
-                for prop2 in props[prop]:
+                for prop2 in Action.ARM_PROPS[prop]:
                     pose[prop][prop2] = float(
-                            el.find(prop).find(prop2).text)
+                            el.find(prop).find(str(prop2)).text)
+            pose["joints"] = map(lambda ar_el: float(ar_el.text), list(el.find("joints")))
             return pose
         
         def read_arms(el):
@@ -75,19 +92,25 @@ class Action:
         builder.data(act_obj.name)
         builder.end("name")
         
-        props = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ] }
         def write_arms(arms):
             builder.start("arms", {})
             for a_ind in [0, 1]:
                 builder.start("arm", {"index" : str(a_ind)})
-                for prop in props:
+                for prop in Action.ARM_PROPS:
                     builder.start(prop, {})
-                    for prop2 in props[prop]:
-                        builder.start(prop2, {})
+                    for prop2 in Action.ARM_PROPS[prop]:
+                        builder.start(str(prop2), {})
                         builder.data(str(arms[a_ind][prop][prop2]))
-                        builder.end(prop2)
+                        builder.end(str(prop2))
                     builder.end(prop)
+                builder.start("joints", {})
+                for joint in arms[a_ind]["joints"]:
+                    builder.start("i", {})
+                    builder.data(str(joint))
+                    builder.end("i")
+                builder.end("joints")
                 builder.end("arm")
+                    
             builder.end("arms")
         
         if (act_obj.type == Action.ACTION_QUEUE):
@@ -123,21 +146,12 @@ class Action:
             builder.start("poses", {})
             for pose in act_obj.poses:
                 builder.start("pose", {})
-                write_arms(pose.arms)
+                write_arms(pose["arms"])
                 builder.start("timing", {})
-                builder.data(str(pose.timing))
+                builder.data(str(pose["timing"]))
                 builder.end("timing")
                 builder.end("pose")
-            builder.end("poses")
-    
-    @staticmethod
-    def get_saved_actions():
-        return map(Action, 
-            filter(lambda f: f.endswith(Action.FILE_EXTENSION),
-                filter(isfile, 
-                    map(lambda f: join(Action.ACTION_DIRECTORY, f), 
-                        listdir(Action.ACTION_DIRECTORY)))))
-        
+            builder.end("poses")        
     
     def save(self):
         '''saves action to file'''

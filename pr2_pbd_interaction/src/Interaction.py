@@ -73,9 +73,8 @@ class Interaction:
             Command.RECORD_OBJECT_POSE: Response(self.record_object_pose),
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording),
-            #Command.START_RECORDING_RELATIVE_MOTION: Response(partial(
-                                            #self.start_recording, True)),
-            Command.STOP_RECORDING_MOTION: Response(self.stop_recording)}
+            Command.STOP_RECORDING_MOTION: Response(self.stop_recording),
+            Command.SAVE_ACTION: Response(self.save_experiment_state)}
 
         rospy.loginfo('Interaction initialized.')
 
@@ -268,33 +267,35 @@ class Interaction:
             traj_step = Action()
             traj_step.type = Action.TRAJECTORY
 
-            waited_time = Interaction._arm_trajectory[0].timing
-            _relative_motion_start = Interaction._arm_trajectory[0]
-            
-            traj_step.poses = map(lambda pose: { "timing" : pose.timing
-                                - waited_time + rospy.Duration(0.1),
+            waited_time = Interaction._arm_trajectory[0]["timing"]
+            _relative_motion_start = Interaction._arm_trajectory[0]["arms"]
+            traj_step.poses = [{ "timing" : (pose["timing"]
+                                - waited_time + rospy.Duration(0.1)).to_nsec(),
                                 "arms" : [{ "position" : {
-                                    "x" : pose.arms[a_ind]
+                                    "x" : pose["arms"][a_ind]
                                         .ee_pose.position.x -
-                                        _relative_motion_start[a_ind].position.x,
-                                    "y" : pose.arms[a_ind]
+                                        _relative_motion_start[a_ind].ee_pose.position.x,
+                                    "y" : pose["arms"][a_ind]
                                         .ee_pose.position.y -
-                                        _relative_motion_start[a_ind].position.y,
-                                    "z" : pose.arms[a_ind]
+                                        _relative_motion_start[a_ind].ee_pose.position.y,
+                                    "z" : pose["arms"][a_ind]
                                         .ee_pose.position.z -
-                                        _relative_motion_start[a_ind].position.z
+                                        _relative_motion_start[a_ind].ee_pose.position.z
                                 }, "orientation" : { 
-                                    "x" : pose.arms[a_ind]
+                                    "x" : pose["arms"][a_ind]
                                         .ee_pose.orientation.x,
-                                    "y" : pose.arms[a_ind]
+                                    "y" : pose["arms"][a_ind]
                                         .ee_pose.orientation.y,
-                                    "z" : pose.arms[a_ind]
+                                    "z" : pose["arms"][a_ind]
                                         .ee_pose.orientation.z,
-                                    "w" : pose.arms[a_ind]
+                                    "w" : pose["arms"][a_ind]
                                         .ee_pose.orientation.w
-                                } } for a_ind in [0, 1] ] }, Interaction._arm_trajectory)
+                                }, "joints" : pose["arms"][a_ind].joint_pose } 
+                                for a_ind in [0, 1] ] } for pose 
+                                in Interaction._arm_trajectory]
                                                     
             self.session.add_step_to_action(traj_step)
+            
             
             Interaction._arm_trajectory = None
             
@@ -338,7 +339,8 @@ class Interaction:
                                                 abs_ee_poses[arm_index])
 
             if (nearest_obj == None):
-                states[arm_index] = Arms.convert_from_state(abs_ee_poses[arm_index])
+                states[arm_index] = Arms.convert_from_state(abs_ee_poses[arm_index],
+                    joint_poses[arm_index])
             else:
                 # Relative
                 rel_ee_pose = World.transform(
@@ -503,7 +505,11 @@ class Interaction:
 
     def save_experiment_state(self):
         '''Saves session state'''
-        self.session.save_current_action()
+        
+        if self.session.save_current_action():
+            return [RobotSpeech.ACTION_SAVED, GazeGoal.NOD]
+        else:
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     @staticmethod
     def empty_response(responses):

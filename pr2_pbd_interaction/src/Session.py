@@ -28,8 +28,8 @@ class Session:
             self._get_participant_id()
         rospy.set_param('data_directory', self._data_dir)
 
-        self.actions = []
-        self.current_action_index = None
+        self.actions = Action.get_saved_actions()
+        self.current_action_index = 0 if len(self.actions) > 0 else None
 
         #if (self._is_reload):
             #self._load_session_state(object_list)
@@ -70,6 +70,7 @@ class Session:
             if self.current_action_index != None
             else ""),
             map(lambda act: act.name, self.actions),
+            map(lambda act: act.id, self.actions),
             0 if self.current_action_index == None else self.current_action_index,
             self._selected_step)
         #return ExperimentState(self.n_actions(),
@@ -213,8 +214,10 @@ class Session:
         if (self.current_action_index != None):
             self.actions[self.current_action_index].save()
             self.save_session_state(is_save_actions=False)
+            return True
         else:
             rospy.logwarn('No skills created yet.')
+            return False
 
     def add_step_to_action(self, step_act):
         '''Add a new step to the current action'''
@@ -276,9 +279,8 @@ class Session:
 
     def next_action(self):
         '''Switches to next action'''
-        self.switch_to_action(self.current_action_index + 1)
-        return success
-
+        return self.switch_to_action(self.current_action_index + 1)
+        
     def previous_action(self):
         '''Switches to previous action'''
         return self.switch_to_action(self.current_action_index - 1)

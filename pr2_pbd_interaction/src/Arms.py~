@@ -39,25 +39,26 @@ class Arms:
         self.status = ExecutionStatus.NOT_EXECUTING
     
     @staticmethod
-    def convert_from_state(arm_state):
+    def convert_from_state(ee_pose, joint_pose):
         return { "position" :
-                { "x" : arm_state.position.x,
-                  "y" : arm_state.position.y,
-                  "z" : arm_state.position.z
+                { "x" : ee_pose.position.x,
+                  "y" : ee_pose.position.y,
+                  "z" : ee_pose.position.z
                 }, "orientation": {
-                  "x" : arm_state.orientation.x,    
-                  "y" : arm_state.orientation.y,
-                  "z" : arm_state.orientation.z,
-                  "w" : arm_state.orientation.w
-                } }
+                  "x" : ee_pose.orientation.x,    
+                  "y" : ee_pose.orientation.y,
+                  "z" : ee_pose.orientation.z,
+                  "w" : ee_pose.orientation.w
+                },
+                "joints" : joint_pose}
     
     @staticmethod
-    def convert_to_state(dic):
-        return ArmState(ArmState.ROBOT_BASE, Pose(Point(dic["position"]["x"],
+    def convert_to_state(dic, refFrame=ArmState.ROBOT_BASE):
+        return ArmState(refFrame, Pose(Point(dic["position"]["x"],
                     dic["position"]["y"], dic["position"]["z"]),
                 Quaternion(dic["orientation"]["x"], dic["orientation"]["y"],
                     dic["orientation"]["z"], dic["orientation"]["w"] )), 
-                    [0, 0, 0, 0, 0, 0, 0, 0], Object())
+                    dic["joints"], Object())
     
     @staticmethod
     def set_arm_mode(arm_index, mode):
@@ -99,53 +100,11 @@ class Arms:
         '''Preempts an ongoing execution'''
         self.preempt = True
 
-    def solve_ik_for_action(self):
-        '''Computes joint positions for all end-effector poses
-        in an action'''
-        
-        prev_arm_state = map(lambda a_ind: Arms.get_ee_state(a_ind), [0, 1])
-        # Go over steps of the action
-        for i in range(self.action.n_frames()):
-            # For each step check step type
-            # If arm target action
-            if (self.action.actions[i].type == ActionStep.ARM_TARGET):
-                # Find frames that are relative and convert to absolute
-                r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
-                                        self.action.seq.seq[i].armTarget.rArm,
-                                        prev_arm_state[0])
-                l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
-                                        self.action.seq.seq[i].armTarget.lArm,
-                                        prev_arm_state[1])
-
-                self.action.seq.seq[i].armTarget.rArm = r_arm
-                self.action.seq.seq[i].armTarget.lArm = l_arm
-                prev_arm_state = [r_arm.ee_pose, l_arm.ee_pose]
-                if (not has_solution_r) or (not has_solution_l):
-                    return False
-
-            if (self.action.seq.seq[i].type == ActionStep.ARM_TRAJECTORY):
-                n_frames = len(self.action.seq.seq[i].armTrajectory.timing)
-                end_state = prev_arm_state
-                for j in range(n_frames):
-                    r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
-                            self.action.seq.seq[i].armTrajectory.rArm[j],
-                            prev_arm_state[0])
-                    l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
-                            self.action.seq.seq[i].armTrajectory.lArm[j],
-                            prev_arm_state[1])
-                    self.action.seq.seq[i].armTrajectory.rArm[j] = r_arm
-                    self.action.seq.seq[i].armTrajectory.lArm[j] = l_arm
-                    end_state = [r_arm.ee_pose, l_arm.ee_pose]
-                    if (not has_solution_r) or (not has_solution_l):
-                        return False
-                prev_arm_state = end_state
-        return True
-
     @staticmethod
     def solve_ik_for_arm(arm_index, arm_state, cur_arm_pose=None):
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object
-        if (False):#arm_state.refFrame == ArmState.OBJECT):
+        if (arm_state.refFrame == ArmState.OBJECT):
 	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is relative')
             solution = ArmState()
             target_pose = World.transform(arm_state.ee_pose,
@@ -161,11 +120,10 @@ class Arms:
                                         target_pose.orientation)
                 solution.joint_pose = target_joints
                 return solution, True
-        elif (True):# (arm_state.refFrame == ArmState.ROBOT_BASE):
-	    rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
+        elif (arm_state.refFrame == ArmState.ROBOT_BASE):
             target_joints = Arms.arms[arm_index].get_ik_for_ee(
                                                     arm_state.ee_pose,
-                                                    None)
+                                                    arm_state.joint_pose)
             if (target_joints == None):
                 rospy.logerr('No IK for absolute end-effector pose.')
                 return arm_state, False
@@ -183,16 +141,17 @@ class Arms:
                         cur_arm_pose.position.x + arm_state.ee_pose.position.x,
                         cur_arm_pose.position.y + arm_state.ee_pose.position.y,
                         cur_arm_pose.position.z + arm_state.ee_pose.position.z),
-                        Quaternion(cur_arm_pose.orientation.x,
-                        cur_arm_pose.orientation.y,
-                        cur_arm_pose.orientation.z,
-                        cur_arm_pose.orientation.w))
+                        Quaternion(
+                            arm_state.ee_pose.orientation.x,
+                            arm_state.ee_pose.orientation.y,
+                            arm_state.ee_pose.orientation.z,
+                            arm_state.ee_pose.orientation.w))
             
             target_joints = Arms.arms[arm_index].get_ik_for_ee(target_ee_pose,
                                             arm_state.joint_pose)
             
             if (target_joints == None):
-                rospy.logerr('No IK for relative end-effector pose.')
+                rospy.logerr('No IK for pose relative end-effector pose.')
                 return solution, False
             else:
                 solution.refFrame = ArmState.ROBOT_BASE
@@ -241,17 +200,21 @@ class Arms:
             for act in action.actions:
                 self.execute_rec_action(act)
         elif (action.type == Action.POSE):
-            #rospy.loginfo(Arms.convert_to_state(action.arms[0]))
             r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
                                     Arms.convert_to_state(action.arms[0]))
             l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
                                     Arms.convert_to_state(action.arms[1]))
-                                    
-            self.move_to_joints(r_arm, l_arm)
+            if (has_solution_l and has_solution_r):
+                self.move_to_joints(r_arm, l_arm)
         elif (action.type == Action.GRIPPER):
             pass
         elif (action.type == Action.TRAJECTORY):
-            pass
+            for a_ind in [0, 1]:
+                Arms.arms[a_ind].exectute_joint_traj(
+                    [Arms.solve_ik_for_arm(a_ind, 
+                    Arms.convert_to_state(pose["arms"][a_ind], ArmState.PREVIOUS_POSE),
+                    Arms.get_ee_state(a_ind))[0] for pose in action.poses],
+                    [rospy.Duration.from_nsec(pose["timing"]) for pose in action.poses])
         
             
     def execute_action(self):

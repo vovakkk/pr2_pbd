@@ -34,7 +34,7 @@ class ClickableLabel(QtGui.QLabel):
 
 
 class ActionIcon(QtGui.QGridLayout):
-    def __init__(self, parent, index, clickCallback):
+    def __init__(self, parent, index, name, clickCallback):
         QtGui.QGridLayout.__init__(self)
         self.setSpacing(0)
         path = os.popen('rospack find pr2_pbd_gui').read()
@@ -46,13 +46,10 @@ class ActionIcon(QtGui.QGridLayout):
         self.index = index
         self.icon = ClickableLabel(parent, index, clickCallback)
         self.text = QtGui.QLabel(parent)
-        self.text.setText(self.getName())
+        self.text.setText(name)
         self.updateView()
         self.addWidget(self.icon, 0, 0, QtCore.Qt.AlignCenter)
         self.addWidget(self.text, 1, 0, QtCore.Qt.AlignCenter)
-    
-    def getName(self):
-        return 'Action' + str(self.index + 1)
     
     def updateView(self):
         if self.selected:
@@ -106,6 +103,7 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
+        self.commands[Command.SAVE_ACTION] = 'Save action'
         
         self.currentAction = -1
         self.currentStep = -1
@@ -184,6 +182,7 @@ class PbDGUI(Plugin):
         misc_grid4 = QtGui.QHBoxLayout()
         misc_grid4.addWidget(self.create_button(Command.PREV_ACTION))
         misc_grid4.addWidget(self.create_button(Command.NEXT_ACTION))
+        misc_grid4.addWidget(self.create_button(Command.SAVE_ACTION))
         misc_grid4.addStretch(1)
 
         speechGroupBox = QGroupBox('Robot Speech', self._widget)
@@ -323,6 +322,16 @@ class PbDGUI(Plugin):
                     #self.l_view.selectRow(index)
         
         '''New code to deal with xml-ed actions'''
+        self.action_ids = state.action_ids
+        nColumns = 6
+        for index, action_name in enumerate(state.action_names):
+            for key in self.actionIcons.keys():
+                self.actionIcons[key].selected = False
+                self.actionIcons[key].updateView()
+            actIcon = ActionIcon(self._widget, index, action_name, self.action_pressed)
+            self.actionGrid.addLayout(actIcon, int(index/nColumns), 
+                                  index%nColumns)
+            self.actionIcons[index] = actIcon
         if (state.action_xml != ""):
             act = Action()
             act.from_string(state.action_xml)#state['action_xml'])
@@ -380,7 +389,7 @@ class PbDGUI(Plugin):
         for key in self.actionIcons.keys():
              self.actionIcons[key].selected = False
              self.actionIcons[key].updateView()
-        actIcon = ActionIcon(self._widget, actionIndex, self.action_pressed)
+        actIcon = ActionIcon(self._widget, actionIndex, "", self.action_pressed)
         self.actionGrid.addLayout(actIcon, int(actionIndex/nColumns), 
                                   actionIndex%nColumns)
         self.actionIcons[actionIndex] = actIcon

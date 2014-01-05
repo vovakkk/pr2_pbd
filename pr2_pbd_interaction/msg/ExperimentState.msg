@@ -10,5 +10,6 @@
 #pr2_pbd_interaction/Object[] objects
 string action_xml
 string[] action_names
+int32[] action_ids
 uint8 selected_action
 uint8 selected_step
