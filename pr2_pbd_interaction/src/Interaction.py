@@ -31,7 +31,7 @@ from pr2_social_gaze.msg import GazeGoal
 class Interaction:
     '''Finite state machine for the human interaction'''
 
-    _is_programming = False
+    _is_programming = True
     _is_recording_motion = False
     _arm_trajectory = None
 
@@ -136,7 +136,7 @@ class Interaction:
     def save_action(self):
         '''Goes out of edit mode'''
         self.session.save_current_action()
-        Interaction._is_programming = False
+        #Interaction._is_programming = False
         return [RobotSpeech.ACTION_SAVED + ' ' +
                 str(self.session.current_action_index), GazeGoal.NOD]
 
@@ -420,26 +420,21 @@ class Interaction:
     def gui_command_cb(self, command):
         '''Callback for when a GUI command is received'''
         if (not self.arms.is_executing()):
-            if (self.session.n_actions() > 0):
-                if (command.command == GuiCommand.SWITCH_TO_ACTION):
-                    action_no = command.param
-                    self.session.switch_to_action(action_no,
-                                                  self.world.get_frame_list())
-                    response = Response(partial(Interaction.empty_response,
-                        [RobotSpeech.SWITCH_SKILL + str(action_no),
-                         GazeGoal.NOD]))
-                    response.respond()
-                elif (command.command == GuiCommand.SELECT_ACTION_STEP):
-                    step_no = command.param
-                    self.session.select_action_step(step_no)
-                    rospy.loginfo('Selected action step ' + str(step_no))
-                else:
-                    rospy.logwarn('\033[32m This command (' + command.command
-                                  + ') is unknown. \033[0m')
-            else:
+            if (command.command == GuiCommand.SWITCH_TO_ACTION):
+                action_no = command.param
+                self.session.switch_to_action(action_no,
+                                                self.world.get_frame_list())
                 response = Response(partial(Interaction.empty_response,
-                    [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]))
+                    [RobotSpeech.SWITCH_SKILL + str(action_no),
+                        GazeGoal.NOD]))
                 response.respond()
+            elif (command.command == GuiCommand.SELECT_ACTION_STEP):
+                step_no = command.param
+                self.session.select_action_step(step_no)
+                rospy.loginfo('Selected action step ' + str(step_no))
+            else:
+                rospy.logwarn('\033[32m This command (' + command.command
+                                + ') is unknown. \033[0m')
         else:
             rospy.logwarn('Ignoring GUI command during execution: ' +
                                 command.command)
