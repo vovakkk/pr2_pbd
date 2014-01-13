@@ -284,6 +284,10 @@ class Session:
     def previous_action(self):
         '''Switches to previous action'''
         return self.switch_to_action(self.current_action_index - 1)
+        
+    def switch_to_action_by_name(self, action_name):
+        return switch_to_action(next((i for i, act in enumerate(self.actions)
+                if act.name == action_name), -1))
 
     def n_frames(self):
         '''Returns the number of frames'''

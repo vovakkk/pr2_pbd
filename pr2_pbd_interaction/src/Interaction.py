@@ -399,20 +399,28 @@ class Interaction:
                                   + command.command)
         else:
             switch_command = 'SWITCH_TO_ACTION'
+            name_command = "name-action "
+            add_action_commnad = "add-action-step "
             if (switch_command in command.command):
-                action_no = command.command[
+                action_name = command.command[
                                 len(switch_command):len(command.command)]
-                action_no = int(action_no)
                 if (self.session.n_actions() > 0):
-                    self.session.switch_to_action(action_no,
-                                                  self.world.get_frame_list())
+                    self.session.switch_to_action_by_name(action_no)
                     response = Response(partial(Interaction.empty_response,
-                        [RobotSpeech.SWITCH_SKILL + str(action_no),
+                        [RobotSpeech.SWITCH_SKILL + action_name,
                          GazeGoal.NOD]))
                 else:
                     response = Response(partial(Interaction.empty_response,
                         [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]))
                 response.respond()
+            elif (name_command in command.command):
+                action_name = command.command[
+                                len(switch_command):len(command.command)]
+                Response(partial(Interaction.empty_response,
+                        [RobotSpeech.SWITCH_SKILL + action_name,
+                         GazeGoal.NOD])).respond()
+            elif (add_action_commnad in command.command):
+                pass
             else:
                 rospy.logwarn('\033[32m This command (' + command.command
                               + ') is unknown. \033[0m')
