@@ -398,14 +398,14 @@ class Interaction:
                     rospy.logwarn('Ignoring speech command during execution: '
                                   + command.command)
         else:
-            switch_command = 'SWITCH_TO_ACTION'
+            switch_command = "switch-to-action "
             name_command = "name-action "
             add_action_commnad = "add-action-step "
             if (switch_command in command.command):
                 action_name = command.command[
                                 len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
-                    self.session.switch_to_action_by_name(action_no)
+                    self.session.switch_to_action_by_name(action_name)
                     response = Response(partial(Interaction.empty_response,
                         [RobotSpeech.SWITCH_SKILL + action_name,
                          GazeGoal.NOD]))
@@ -415,12 +415,27 @@ class Interaction:
                 response.respond()
             elif (name_command in command.command):
                 action_name = command.command[
-                                len(switch_command):len(command.command)]
-                Response(partial(Interaction.empty_response,
-                        [RobotSpeech.SWITCH_SKILL + action_name,
-                         GazeGoal.NOD])).respond()
+                                len(name_command):len(command.command)]
+                                
+                if (len(action_name) > 1):
+                    self.session.name_action(action_name)
+                    Response(partial(Interaction.empty_response,
+                            [RobotSpeech.SWITCH_SKILL + action_name,
+                            GazeGoal.NOD])).respond()
+                else:
+                    Response(partial(Interaction.empty_response,
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
             elif (add_action_commnad in command.command):
-                pass
+                action_name = command.command[
+                                len(add_action_commnad):len(command.command)]
+                if (self.session.add_action_step_action(action_name)):
+                    Response(partial(Interaction.empty_response,
+                            [RobotSpeech.SWITCH_SKILL + action_name,
+                            GazeGoal.NOD])).respond()
+                else:
+                    Response(partial(Interaction.empty_response,
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
+                    
             else:
                 rospy.logwarn('\033[32m This command (' + command.command
                               + ') is unknown. \033[0m')
@@ -430,8 +445,7 @@ class Interaction:
         if (not self.arms.is_executing()):
             if (command.command == GuiCommand.SWITCH_TO_ACTION):
                 action_no = command.param
-                self.session.switch_to_action(action_no,
-                                                self.world.get_frame_list())
+                self.session.switch_to_action(action_no)
                 response = Response(partial(Interaction.empty_response,
                     [RobotSpeech.SWITCH_SKILL + str(action_no),
                         GazeGoal.NOD]))

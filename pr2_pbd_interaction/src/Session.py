@@ -31,6 +31,14 @@ class Session:
         self.actions = Action.get_saved_actions()
         self.current_action_index = 0 if len(self.actions) > 0 else None
 
+        #link actions in action list to themselves
+        for act in self.actions:
+            act.actions = [next((self_act for self_act in self.actions if
+                    self_act.id == child_act.id), None)
+                        if child_act.type == Action.ACTION_QUEUE else child_act
+                        for child_act in 
+                        act.actions]
+        
         #if (self._is_reload):
             #self._load_session_state(object_list)
             #rospy.loginfo("Session state loaded.")
@@ -178,6 +186,8 @@ class Session:
         newAct = Action()
         newAct.type = Action.ACTION_QUEUE
         newAct.actions = []
+        newAct.save()
+        newAct.name = "Unnamed " + str(newAct.id)
         self.actions.append(newAct)
         self._update_experiment_state()
 
@@ -229,6 +239,17 @@ class Session:
         #self._object_list = object_list
         self._update_experiment_state()
 
+    def add_action_step_action(self, act_name):
+        act = next((act for act in self.actions
+                if act.name == act_name), None)
+        if (act != None):
+            self.actions[self.current_action_index].actions.insert(self._selected_step, act)
+            self._update_experiment_state()
+            return True
+        else:
+            rospy.logwarn("Action " + act_name + " not found")
+            return False
+        
     def delete_last_step(self):
         '''Removes the last step of the action'''
         if (self.current_action_index != None):
@@ -286,9 +307,14 @@ class Session:
         return self.switch_to_action(self.current_action_index - 1)
         
     def switch_to_action_by_name(self, action_name):
-        return switch_to_action(next((i for i, act in enumerate(self.actions)
+        return self.switch_to_action(next((i for i, act in enumerate(self.actions)
                 if act.name == action_name), -1))
-
+    
+    def name_action(self, new_name):
+        if (len(self.actions) > 0):
+            self.actions[self.current_action_index].name = new_name
+            self._update_experiment_state()
+        
     def n_frames(self):
         '''Returns the number of frames'''
         if (self.current_action_index != None):

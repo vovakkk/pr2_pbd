@@ -206,15 +206,16 @@ class Arms:
                                     Arms.convert_to_state(action.arms[1]))
             if (has_solution_l and has_solution_r):
                 self.move_to_joints(r_arm, l_arm)
-        elif (action.type == Action.GRIPPER):
-            pass
         elif (action.type == Action.TRAJECTORY):
             for a_ind in [0, 1]:
                 Arms.arms[a_ind].exectute_joint_traj(
                     [Arms.solve_ik_for_arm(a_ind, 
                     Arms.convert_to_state(pose["arms"][a_ind], ArmState.PREVIOUS_POSE),
                     Arms.get_ee_state(a_ind))[0] for pose in action.poses],
-                    [rospy.Duration.from_nsec(pose["timing"]) for pose in action.poses])
+                    [rospy.Duration(0, pose["timing"]) for pose in action.poses])
+                while((Arms.arms[0].is_executing() or Arms.arms[1].is_executing())
+                    and not self.preempt):
+                    time.sleep(0.01)
         
             
     def execute_action(self):

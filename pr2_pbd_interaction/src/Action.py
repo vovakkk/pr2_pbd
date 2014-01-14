@@ -72,7 +72,7 @@ class Action:
         if (act_obj.type == Action.ACTION_QUEUE):
             act_obj.actions = map(lambda el: 
                     self._read_action(el, Action()) if el.get("inline") == "True"
-                    else Action(int(el.get("id"))), list(act_el.find("actions")))
+                    else Action(id=int(el.get("id"))), list(act_el.find("actions")))
         elif (act_obj.type == Action.POSE):
             act_obj.arms = read_arms(act_el.find("pose"))
             act_obj.target = ObjectType(int(act_el.find("target/type_id").text))

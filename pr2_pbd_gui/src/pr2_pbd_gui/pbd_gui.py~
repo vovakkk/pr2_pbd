@@ -41,7 +41,7 @@ class ActionIcon(QtGui.QGridLayout):
         path = path[0:len(path)-1]
         self.notSelectedIconPath = path + '/icons/actions0.png'
         self.selectedIconPath = path + '/icons/actions1.png'
-        self.selected = True
+        self.selected = False
         self.actionIconWidth = 50
         self.index = index
         self.icon = ClickableLabel(parent, index, clickCallback)
@@ -290,8 +290,16 @@ class PbDGUI(Plugin):
             self.stepsGrid.removeWidget(wid)
             wid.deleteLater()
             del wid
+        btnPls = QtGui.QPushButton("+", self._widget)
+        def pls_clicked():
+            self.gui_cmd_publisher.publish(
+                    GuiCommand(GuiCommand.SELECT_ACTION_STEP, 0))
+            self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
+        btnPls.clicked.connect(pls_clicked)
+        self.stepsGrid.addWidget(btnPls, 0, 5)
         for ind, sub_act in enumerate(act.actions):
             def createLayout(ind, sub_act):
+                stepRow = ind + 1
                 typeBox = QtGui.QComboBox(self._widget)
                 typeBox.addItem("Action")
                 typeBox.addItem("Pose")
@@ -301,10 +309,10 @@ class PbDGUI(Plugin):
                     setRow(3 if typeBox.currentIndex() == 2 else typeBox.currentIndex())
                     
                 typeBox.currentIndexChanged.connect(type_changed)
-                self.stepsGrid.addWidget(typeBox, ind, 0)
+                self.stepsGrid.addWidget(typeBox, stepRow, 0)
                 
                 def setRow(act_type):
-                    for itm in [self.stepsGrid.itemAtPosition(ind, i) 
+                    for itm in [self.stepsGrid.itemAtPosition(stepRow, i) 
                             for i in range(1, 4)]:
                         if itm:
                             wid = itm.widget()
@@ -314,14 +322,18 @@ class PbDGUI(Plugin):
                     if (act_type == Action.ACTION_QUEUE):
                         act_name = QtGui.QComboBox(self._widget)
                         act_name.addItems(self.action_names)
-                        self.stepsGrid.addWidget(act_name, ind, 1)
+                        act_name.setCurrentIndex(self.action_ids.index(sub_act.id))
+                        self.stepsGrid.addWidget(act_name, stepRow, 1)
                         save_but = QtGui.QPushButton("Save", self._widget)
                         def change_act():
+                            self.gui_cmd_publisher.publish(
+                                    GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+                            self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
                             self.speech_cmd_publisher.publish(Command(
-                                Command.ADD_ACTION_STEP + self.action_names[
+                                Command.ADD_ACTION_STEP + " " + self.action_names[
                                     act_name.currentIndex()]))
                         save_but.clicked.connect(change_act)
-                        self.stepsGrid.addWidget(save_but, ind, 2)
+                        self.stepsGrid.addWidget(save_but, stepRow, 2)
                     elif (act_type == Action.POSE):
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
@@ -330,7 +342,7 @@ class PbDGUI(Plugin):
                             self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
                             self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
                         rec_but.clicked.connect(hand_rec)
-                        self.stepsGrid.addWidget(rec_but, ind, 1)
+                        self.stepsGrid.addWidget(rec_but, stepRow, 1)
                     elif (act_type == Action.TRAJECTORY):
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
@@ -339,10 +351,11 @@ class PbDGUI(Plugin):
                                 self.recording = False
                                 self.speech_cmd_publisher.publish(Command(
                                         Command.STOP_RECORDING_MOTION))
-                                self.gui_cmd_publisher.publish(
-                                        GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                                self.speech_cmd_publisher.publish(Command(
-                                        Command.DELETE_LAST_STEP))
+                                rospy.loginfo("would have deleted at " + str(ind + 1))
+                                #self.gui_cmd_publisher.publish(
+                                        #GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+                                #self.speech_cmd_publisher.publish(Command(
+                                        #Command.DELETE_LAST_STEP))
                             elif (not (self.recording)):
                                 rec_but.setText("Stop")
                                 self.recording = True
@@ -351,9 +364,11 @@ class PbDGUI(Plugin):
                                 self.speech_cmd_publisher.publish(Command(
                                         Command.START_RECORDING_MOTION))
                         rec_but.clicked.connect(hand_rec)
-                        self.stepsGrid.addWidget(rec_but, ind, 1)
+                        self.stepsGrid.addWidget(rec_but, stepRow, 1)
                 
                 typeBox.setCurrentIndex(2 if sub_act.type == Action.TRAJECTORY else sub_act.type)
+                if (sub_act.type == 0):
+                    setRow(0)
                 
                 btnPls = QtGui.QPushButton("+", self._widget)
                 def pls_clicked():
@@ -361,7 +376,7 @@ class PbDGUI(Plugin):
                             GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
                     self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
                 btnPls.clicked.connect(pls_clicked)
-                self.stepsGrid.addWidget(btnPls, ind, 5)
+                self.stepsGrid.addWidget(btnPls, stepRow, 5)
                 btnMns = QtGui.QPushButton("-", self._widget)
                 def mns_clicked():
                     self.gui_cmd_publisher.publish(
@@ -369,7 +384,7 @@ class PbDGUI(Plugin):
                     self.speech_cmd_publisher.publish(Command(
                             Command.DELETE_LAST_STEP))
                 btnMns.clicked.connect(mns_clicked)
-                self.stepsGrid.addWidget(btnMns, ind, 4)
+                self.stepsGrid.addWidget(btnMns, stepRow, 4)
             createLayout(ind, sub_act)
         
     def update_state(self, state):
@@ -415,14 +430,27 @@ class PbDGUI(Plugin):
         self.action_ids = state.action_ids
         self.action_names = state.action_names
         nColumns = 6
+        '''delete previous action icons'''
+        for icon in self.actionIcons.values():
+            while icon.count():
+                item = icon.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    self.clearLayout(item.layout())
+            self.actionGrid.removeItem(icon)
+            icon.deleteLater()
+            del icon
+        self.actionIcons.clear()
         for index, action_name in enumerate(state.action_names):
-            for key in self.actionIcons.keys():
-                self.actionIcons[key].selected = False
-                self.actionIcons[key].updateView()
             actIcon = ActionIcon(self._widget, index, action_name, self.action_pressed)
             self.actionGrid.addLayout(actIcon, int(index/nColumns), 
                                   index%nColumns)
             self.actionIcons[index] = actIcon
+            if (index == state.selected_action):
+                actIcon.selected = True
+                actIcon.updateView()
         if (state.action_xml != ""):
             act = Action()
             act.from_string(state.action_xml)#state['action_xml'])
@@ -437,34 +465,14 @@ class PbDGUI(Plugin):
     def n_actions(self):
         return len(self.actionIcons.keys())
 
-    def new_action(self):
-        nColumns = 6
-        actionIndex = self.n_actions()
-        for key in self.actionIcons.keys():
-             self.actionIcons[key].selected = False
-             self.actionIcons[key].updateView()
-        actIcon = ActionIcon(self._widget, actionIndex, "", self.action_pressed)
-        self.actionGrid.addLayout(actIcon, int(actionIndex/nColumns), 
-                                  actionIndex%nColumns)
-        self.actionIcons[actionIndex] = actIcon
-
     def step_pressed(self, step_index):
         gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
-        for i in range(len(self.actionIcons.keys())):
-            key = self.actionIcons.keys()[i]
-            if key == actionIndex:
-                 self.actionIcons[key].selected = True
-            else:
-                 self.actionIcons[key].selected = False
-            self.actionIcons[key].updateView()
-        self.currentAction = actionIndex
-        self.stepsBox.setTitle('Steps for Action ' + str(self.currentAction+1))
         if isPublish:
-            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, (actionIndex+1))
-            self.gui_cmd_publisher.publish(gui_cmd)
+            self.speech_cmd_publisher.publish(Command(Command.SWITCH_TO_ACTION + 
+                    " " + self.action_names[actionIndex]))
         
     def command_cb(self):
         clickedButtonName = self._widget.sender().text()

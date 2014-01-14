@@ -24,5 +24,6 @@ string START_RECORDING_MOTION = start-recording-motion
 string STOP_RECORDING_MOTION = stop-recording-motion
 string ADD_ACTION_STEP = add-action-step
 string CHANGE_ACTION_NAME = name-action
+string SWITCH_TO_ACTION = switch-to-action
 string UNRECOGNIZED = unrecognized
 string command
