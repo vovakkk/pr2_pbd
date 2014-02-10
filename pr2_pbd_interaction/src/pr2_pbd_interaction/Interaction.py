@@ -16,7 +16,7 @@ from visualization_msgs.msg import MarkerArray
 from RobotSpeech import RobotSpeech
 from Session import Session
 from Response import Response
-from Arms import Arms
+from Robot import Robot
 from Action import Action
 from ObjectType import ObjectType
 from pr2_pbd_interaction.msg import ArmState, GripperState
@@ -34,7 +34,7 @@ class Interaction:
     _arm_trajectory = None
 
     def __init__(self):
-        self.arms = Arms()
+        self.robot = Robot()
         #self.world = World()
         #self.session = Session(object_list=self.world.get_frame_list(),
                                #is_debug=True)
@@ -72,7 +72,9 @@ class Interaction:
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording),
-            Command.SAVE_ACTION: Response(self.save_experiment_state)}
+            Command.SAVE_ACTION: Response(self.save_experiment_state)
+        }
+
 
         rospy.loginfo('Interaction initialized.')
 
@@ -91,7 +93,7 @@ class Interaction:
 
     def close_hand(self, arm_index):
         '''Closes gripper on the indicated side'''
-        if Arms.set_gripper_state(arm_index, GripperState.CLOSED):
+        if self.robot.set_gripper_state(arm_index, GripperState.CLOSED):
             speech_response = Response.close_responses[arm_index]
             if (Interaction._is_programming):
                 self.save_gripper_step(arm_index, GripperState.CLOSED)
@@ -147,13 +149,16 @@ class Interaction:
                 str(self.session.current_action_index), GazeGoal.NOD]
 
     def next_action(self):
-        '''Switches to next action'''
-        if self.session.next_action():
-            return [RobotSpeech.SWITCH_SKILL + ' ' +
-                    str(self.session.current_action_index), GazeGoal.NOD]
-        else:
-            return [RobotSpeech.ERROR_NEXT_SKILL + ' ' +
-                    str(self.session.current_action_index), GazeGoal.SHAKE]
+        # doing debug with this
+        rospy.loginfo(self.arms.get_ee_state(2))
+        return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+        # '''Switches to next action'''
+        # if self.session.next_action():
+        #     return [RobotSpeech.SWITCH_SKILL + ' ' +
+        #             str(self.session.current_action_index), GazeGoal.NOD]
+        # else:
+        #     return [RobotSpeech.ERROR_NEXT_SKILL + ' ' +
+        #             str(self.session.current_action_index), GazeGoal.SHAKE]
 
     def previous_action(self):
         '''Switches to previous action'''
@@ -308,8 +313,8 @@ class Interaction:
             Interaction._arm_trajectory.append({
                 "arms" : map(lambda a_ind:
                                 ArmState(ArmState.ROBOT_BASE,
-                                        Arms.get_ee_state(a_ind),
-                                        Arms.get_joint_state(a_ind), Object()), [0, 1]),
+                                        self.robot.get_ee_state(a_ind),
+                                        self.robot.get_joint_state(a_ind), Object()), [0, 1]),
                 "timing" : rospy.Time.now()})
 
     def save_step(self):
@@ -327,8 +332,8 @@ class Interaction:
 
     def _get_arm_states(self):
         '''Returns the current arms states in the right format'''
-        abs_ee_poses = map(Arms.get_ee_state, [0, 1])
-        joint_poses = map(Arms.get_joint_state, [0, 1])
+        abs_ee_poses = map(self.robot.get_ee_state, [0, 1])
+        joint_poses = map(self.robot.get_joint_state, [0, 1])
                 
         states = [None, None]
 
@@ -337,7 +342,7 @@ class Interaction:
                                #                 abs_ee_poses[arm_index])
 
             if (nearest_obj == None):
-                states[arm_index] = Arms.convert_from_state(abs_ee_poses[arm_index],
+                states[arm_index] = self.robot.convert_from_state(abs_ee_poses[arm_index],
                     joint_poses[arm_index])
             else:
                 # Relative
