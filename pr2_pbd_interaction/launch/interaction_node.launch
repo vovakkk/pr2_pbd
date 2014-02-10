@@ -1,0 +1,7 @@
+<launch>  
+  <node name="pr2_pbd_interaction" pkg="pr2_pbd_interaction" type="interaction.py" output="screen">
+    <param name="dataRoot" value="~" />
+    <param name="isReload" value="false" />
+    <param name="experimentNumber" value="0" />
+  </node>
+</launch>
