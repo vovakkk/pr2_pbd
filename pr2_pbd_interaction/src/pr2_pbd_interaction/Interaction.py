@@ -80,12 +80,12 @@ class Interaction:
 
     def open_hand(self, arm_index):
         '''Opens gripper on the indicated side'''
-        if self.robot.set_gripper_state(arm_index, GripperState.OPEN):
+        if self.robot.set_gripper_state(arm_index, Robot.OPENED):
             speech_response = Response.open_responses[arm_index]
-            if (Interaction._is_programming):
-                self.save_gripper_step(arm_index, GripperState.OPEN)
-                speech_response = (speech_response + ' ' +
-                                   RobotSpeech.STEP_RECORDED)
+            # if (Interaction._is_programming):
+            #     self.save_gripper_step(arm_index, Robot.OPENED)
+            #     speech_response = (speech_response + ' ' +
+            #                        RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
         else:
             return [Response.already_open_responses[arm_index],
@@ -93,12 +93,12 @@ class Interaction:
 
     def close_hand(self, arm_index):
         '''Closes gripper on the indicated side'''
-        if self.robot.set_gripper_state(arm_index, GripperState.CLOSED):
+        if self.robot.set_gripper_state(arm_index, Robot.CLOSED):
             speech_response = Response.close_responses[arm_index]
-            if (Interaction._is_programming):
-                self.save_gripper_step(arm_index, GripperState.CLOSED)
-                speech_response = (speech_response + ' ' +
-                                   RobotSpeech.STEP_RECORDED)
+            # if (Interaction._is_programming):
+            #     self.save_gripper_step(arm_index, Robot.CLOSED)
+            #     speech_response = (speech_response + ' ' +
+            #                        RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
         else:
             return [Response.already_closed_responses[arm_index],
