@@ -80,7 +80,7 @@ class Interaction:
 
     def open_hand(self, arm_index):
         '''Opens gripper on the indicated side'''
-        if self.arms.set_gripper_state(arm_index, GripperState.OPEN):
+        if self.robot.set_gripper_state(arm_index, GripperState.OPEN):
             speech_response = Response.open_responses[arm_index]
             if (Interaction._is_programming):
                 self.save_gripper_step(arm_index, GripperState.OPEN)
@@ -106,7 +106,7 @@ class Interaction:
 
     def relax_arm(self, arm_index):
         '''Relaxes arm on the indicated side'''
-        if self.arms.set_arm_mode(arm_index, ArmMode.RELEASE):
+        if self.robot.set_arm_mode(arm_index, Robot.RELAXED):
             return [Response.release_responses[arm_index],
                     Response.glance_actions[arm_index]]
         else:
@@ -115,7 +115,7 @@ class Interaction:
 
     def freeze_arm(self, arm_index):
         '''Stiffens arm on the indicated side'''
-        if self.arms.set_arm_mode(arm_index, ArmMode.HOLD):
+        if self.robot.set_arm_mode(arm_index, Robot.HOLD):
             return [Response.hold_responses[arm_index],
                     Response.glance_actions[arm_index]]
         else:
@@ -150,7 +150,7 @@ class Interaction:
 
     def next_action(self):
         # doing debug with this
-        rospy.loginfo(self.arms.get_ee_state(2))
+        rospy.loginfo(self.robot.get_arm_state())
         return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
         # '''Switches to next action'''
         # if self.session.next_action():
@@ -221,8 +221,8 @@ class Interaction:
 
     def stop_execution(self):
         '''Stops ongoing execution'''
-        if (self.arms.is_executing()):
-            self.arms.stop_execution()
+        if (self.robot.is_executing()):
+            self.robot.stop_execution()
             return [RobotSpeech.STOPPING_EXECUTION, GazeGoal.NOD]
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
@@ -239,8 +239,8 @@ class Interaction:
             #step = ActionStep()
             #step.type = ActionStep.ARM_TARGET
             #step.armTarget = ArmTarget(states[0], states[1], 0.2, 0.2)
-            #actions = [self.arms.get_gripper_state(0),
-                        #self.arms.get_gripper_state(1)]
+            #actions = [self.robot.get_gripper_state(0),
+                        #self.robot.get_gripper_state(1)]
             #actions[arm_index] = gripper_state
             #step.gripperAction = GripperAction(actions[0], actions[1])
             #self.session.add_step_to_action(step,
@@ -361,17 +361,17 @@ class Interaction:
             if (self.session.n_frames() > 0):
                 #self.session.save_current_action()
                 action = self.session.get_current_action()
-                self.arms.start_execution(action)
+                self.robot.start_execution(action)
                 #if (action.is_object_required()):
                     #if (self.world.update_object_pose()):
                         #self.session.get_current_action().update_objects(
                                                 #self.world.get_frame_list())
-                        #self.arms.start_execution(action)
+                        #self.robot.start_execution(action)
                     #else:
                         #return [RobotSpeech.OBJECT_NOT_DETECTED,
                                 #GazeGoal.SHAKE]
                 #else:
-                    #self.arms.start_execution(action)
+                    #self.robot.start_execution(action)
 
                 return [RobotSpeech.START_EXECUTION + ' ' +
                         str(self.session.current_action_index), None]
@@ -388,7 +388,7 @@ class Interaction:
                           command.command + '\033[0m')
             response = self.responses[command.command]
 
-            if (not self.arms.is_executing()):
+            if (not self.robot.is_executing()):
                 if (self._undo_function != None):
                     response.respond()
                     self._undo_function = None
@@ -445,7 +445,7 @@ class Interaction:
 
     def gui_command_cb(self, command):
         '''Callback for when a GUI command is received'''
-        if (not self.arms.is_executing()):
+        if (not self.robot.is_executing()):
             if (command.command == GuiCommand.SWITCH_TO_ACTION):
                 action_no = command.param
                 self.session.switch_to_action(action_no)
@@ -466,10 +466,10 @@ class Interaction:
 
     def update(self):
         '''General update for the main loop'''
-        # self.arms.update()
+        # self.robot.update()
 
-        # if (self.arms.status != ExecutionStatus.NOT_EXECUTING):
-        #     if (self.arms.status != ExecutionStatus.EXECUTING):
+        # if (self.robot.status != ExecutionStatus.NOT_EXECUTING):
+        #     if (self.robot.status != ExecutionStatus.EXECUTING):
         #         self._end_execution()
         if (Interaction._is_recording_motion):
             self._save_arm_to_trajectory()
@@ -480,11 +480,11 @@ class Interaction:
             #action.update_viz()
             #r_target = action.get_requested_targets(0)
             #if (r_target != None):
-                #self.arms.start_move_to_pose(r_target, 0)
+                #self.robot.start_move_to_pose(r_target, 0)
                 #action.reset_targets(0)
             #l_target = action.get_requested_targets(1)
             #if (l_target != None):
-                #self.arms.start_move_to_pose(l_target, 1)
+                #self.robot.start_move_to_pose(l_target, 1)
                 #action.reset_targets(1)
 
             #action.delete_requested_steps()
@@ -501,17 +501,17 @@ class Interaction:
 
     # def _end_execution(self):
     #     '''Responses for when the action execution ends'''
-    #     if (self.arms.status == ExecutionStatus.SUCCEEDED):
+    #     if (self.robot.status == ExecutionStatus.SUCCEEDED):
     #         Response.say(RobotSpeech.EXECUTION_ENDED)
     #         Response.perform_gaze_action(GazeGoal.NOD)
-    #     elif (self.arms.status == ExecutionStatus.PREEMPTED):
+    #     elif (self.robot.status == ExecutionStatus.PREEMPTED):
     #         Response.say(RobotSpeech.EXECUTION_PREEMPTED)
     #         Response.perform_gaze_action(GazeGoal.SHAKE)
     #     else:
     #         Response.say(RobotSpeech.EXECUTION_ERROR_NOIK)
     #         Response.perform_gaze_action(GazeGoal.SHAKE)
 
-    #     self.arms.status = ExecutionStatus.NOT_EXECUTING
+    #     self.robot.status = ExecutionStatus.NOT_EXECUTING
 
     def record_object_pose(self):
         '''Makes the robot look for a table and objects'''
