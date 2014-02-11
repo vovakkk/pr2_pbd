@@ -332,28 +332,27 @@ class Interaction:
 
     def _get_arm_states(self):
         '''Returns the current arms states in the right format'''
-        abs_ee_poses = map(self.robot.get_ee_state, [0, 1])
-        joint_poses = map(self.robot.get_joint_state, [0, 1])
+        return self.robot.get_arm_state()
+        # abs_ee_poses = map(self.robot.get_ee_state, [0, 1])
+        # joint_poses = map(self.robot.get_joint_state, [0, 1])
                 
-        states = [None, None]
+        # states = [None, None]
 
-        for arm_index in [0, 1]:
-            nearest_obj = None#self.world.get_nearest_object(
-                               #                 abs_ee_poses[arm_index])
+        # for arm_index in [0, 1]:
+        #     nearest_obj = None#self.world.get_nearest_object(
+        #                        #                 abs_ee_poses[arm_index])
 
-            if (nearest_obj == None):
-                states[arm_index] = self.robot.convert_from_state(abs_ee_poses[arm_index],
-                    joint_poses[arm_index])
-            else:
-                # Relative
-                rel_ee_pose = World.transform(
-                                    abs_ee_poses[arm_index],
-                                    'base_link', nearest_obj.name)
-                states[arm_index] = ArmState(ArmState.OBJECT,
-                                    rel_ee_pose,
-                                    joint_poses[arm_index], nearest_obj)
+        #     if (nearest_obj == None):
+        #         states[arm_index] = self.robot.get_arm_state()
+        #     else:
+        #         # Relative
+        #         rel_ee_pose = World.transform(
+        #                             abs_ee_poses[arm_index],
+        #                             'base_link', nearest_obj.name)
+        #         states[arm_index] = ArmState(ArmState.OBJECT,
+        #                             rel_ee_pose,
+        #                             joint_poses[arm_index], nearest_obj)
         
-        return states
 
     def execute_action(self):
         '''Starts the execution of the current action'''

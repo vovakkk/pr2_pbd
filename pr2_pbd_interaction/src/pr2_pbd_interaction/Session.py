@@ -121,16 +121,16 @@ class Session:
 
     def save_session_state(self, is_save_actions=True):
         '''Saves the session state onto hard drive'''
-        exp_state = dict()
-        exp_state['nProgrammedActions'] = self.n_actions()
-        exp_state['currentProgrammedActionIndex'] = self.current_action_index
-        state_file = open(self._data_dir + 'experimentState.yaml', 'w')
-        state_file.write(yaml.dump(exp_state))
-        state_file.close()
+        # exp_state = dict()
+        # exp_state['nProgrammedActions'] = self.n_actions()
+        # exp_state['currentProgrammedActionIndex'] = self.current_action_index
+        # state_file = open(self._data_dir + 'experimentState.yaml', 'w')
+        # state_file.write(yaml.dump(exp_state))
+        # state_file.close()
 
         if (is_save_actions):
             for i in range(self.n_actions()):
-                self.actions[i].save()#self._data_dir)
+                self.actions[i].save()
 
     def new_action(self):
         '''Creates new action'''

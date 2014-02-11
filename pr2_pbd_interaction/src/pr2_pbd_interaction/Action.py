@@ -21,6 +21,7 @@ class Action:
     POSE = 1
     GRIPPER = 2
     TRAJECTORY = 3
+
     ARM_PROPS = { "position" : ["x", "y", "z"], "orientation": ["x", "y", "z", "w" ]}
     
     def get_file(self, action):
@@ -62,7 +63,7 @@ class Action:
                 for prop2 in Action.ARM_PROPS[prop]:
                     pose[prop][prop2] = float(
                             el.find(prop).find(str(prop2)).text)
-            pose["joints"] = map(lambda ar_el: float(ar_el.text), list(el.find("joints")))
+            # pose["joints"] = map(lambda ar_el: float(ar_el.text), list(el.find("joints")))
             return pose
         
         def read_arms(el):
@@ -103,12 +104,12 @@ class Action:
                         builder.data(str(arms[a_ind][prop][prop2]))
                         builder.end(str(prop2))
                     builder.end(prop)
-                builder.start("joints", {})
-                for joint in arms[a_ind]["joints"]:
-                    builder.start("i", {})
-                    builder.data(str(joint))
-                    builder.end("i")
-                builder.end("joints")
+                # builder.start(" ", {})
+                # for joint in arms[a_ind]["joints"]:
+                #     builder.start("i", {})
+                #     builder.data(str(joint))
+                #     builder.end("i")
+                # builder.end("joints")
                 builder.end("arm")
                     
             builder.end("arms")
