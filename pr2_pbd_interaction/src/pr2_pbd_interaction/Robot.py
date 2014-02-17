@@ -22,7 +22,9 @@ class Robot:
 		self.robot = moveit_commander.RobotCommander()
 		self.scene = moveit_commander.PlanningSceneInterface()
 		self.arms = [moveit_commander.MoveGroupCommander("right_arm"),
-			moveit_commander.MoveGroupCommander("left_arm")]
+			moveit_commander.MoveGroupCommander("left_arm"),
+			moveit_commander.MoveGroupCommander("arms")]
+
 
 		self.is_exec = False
 
@@ -56,15 +58,57 @@ class Robot:
 				for act in action.actions:
 					self._execute_action(act)
 			elif (action.type == Action.POSE):
+				targs = [None, None]
 				for a_ind in [0, 1]:
 					pos = action.arms[a_ind]['position']
 					ori = action.arms[a_ind]['orientation']
-					self.arms[a_ind].set_pose_target(
-						[pos['x'], pos['y'], pos['z'], ori['x'], ori['y'], ori['z'], ori['w']])
-				
-				rospy.loginfo(self.arms[0].plan())
-				self.arms[0].execute(self.arms[0].plan())
-				self.arms[1].execute(self.arms[1].plan())
+					targs[a_ind] = [pos['x'], pos['y'], pos['z'], ori['x'], ori['y'], ori['z'], ori['w']]
+					# self.arms[a_ind].set_pose_target(
+					# 	[pos['x'], pos['y'], pos['z'], ori['x'], ori['y'], ori['z'], ori['w']])
+				def merge_plans(p1, p2):
+					p1.joint_trajectory.joint_names += p2.joint_trajectory.joint_names
+					for i in range(0, max(len(p1.joint_trajectory.points) - 1,
+						len(p2.joint_trajectory.points) - 1)):
+						if (len(p1.joint_trajectory.points) <= i):
+							p1.joint_trajectory.points.append(
+								p1.joint_trajectory.points[len(
+									p1.joint_trajectory.points) - 1])
+						if (len(p2.joint_trajectory.points) <= i):
+							p2.joint_trajectory.points.append(
+								p2.joint_trajectory.points[len(
+									p2.joint_trajectory.points) - 1])
+						p1.joint_trajectory.points[i].positions += (
+							p2.joint_trajectory.points[i].positions)
+						p1.joint_trajectory.points[i].velocities += (
+							p2.joint_trajectory.points[i].velocities)
+						p1.joint_trajectory.points[i].accelerations += (
+							p2.joint_trajectory.points[i].accelerations)
+					return p1
+
+				self.arms[0].set_pose_target(targs[0])
+				plan1 = self.arms[0].plan()
+				self.arms[1].set_pose_target(targs[1])
+				plan2 = self.arms[1].plan()
+				endPose1 = plan1.joint_trajectory.points[len(
+					plan1.joint_trajectory.points) - 1]
+				endPose2 = plan2.joint_trajectory.points[len(
+					plan2.joint_trajectory.points) - 1]
+				endPoses = {}
+				for i in range(0, len(plan1.joint_trajectory.joint_names) - 1):
+					endPoses[plan1.joint_trajectory.joint_names[i]] = endPose1.positions[i]
+					endPoses[plan2.joint_trajectory.joint_names[i]] = endPose2.positions[i]
+
+				self.arms[2].set_joint_value_target(endPoses)
+				self.arms[2].go()
+				# rospy.loginfo(endPoses)
+
+				# rospy.loginfo(plan1)
+				# rospy.loginfo(plan2)
+				# rospy.loginfo(merge_plans(plan1, plan2))
+				# self.arms[2].execute(merge_plans(plan1, plan2))
+				# self.arms[1].set_pose_target(targs[1])
+				# self.arms[0].go()
+				# self.arms[1].go()
 				# self.arms[1].go(wait=False)
 				# rospy.sleep(10)
 				# rospy.loginfo("left moved")
@@ -86,8 +130,9 @@ class Robot:
 
 	def stop_execution(self):
 		self.is_exec = False
-		self.arms[0].stop()
-		self.arms[1].stop()
+		# self.arms[0].stop()
+		# self.arms[1].stop()
+		self.arms[2].stop()
 
 	def get_arm_state(self):
 		states = [None, None]
