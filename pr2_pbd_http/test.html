@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Test</title>
+		<script src="eventemitter2.js"></script>
+		<script src="roslib.min.js"></script>
+		<script src="script.js"></script>
+		<style>
+		#actsList div {
+			background-color: #000;
+			color: #fff;
+			border-radius: 5px;
+			min-height: 30px;
+			margin-bottom: 10px;
+			cursor: pointer;
+		}
+		#actsList div.selected {
+			background-color:  #444;
+		}
+		#addButs > button, #delButs > button {
+			display: block;
+		}
+		
+		</style>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<td id="actsList">
+				</td>
+				<td id="addButs"></td>
+				<td id="delButs"></td>
+				<td id="curAct">
+				</td>
+			</tr>
+		</table>
+		<button com="execute-action">Execute!</button>
+		<button com="relax-right-arm">Relax right arm</button>
+		<button com="relax-left-arm">Relax left arm</button><br/>
+		<button com="freeze-right-arm">Freeze right arm</button>
+		<button com="freeze-left-arm">Freeze left arm</button>
+		<button com="save-action">Save</button>
+	</body>
+</html>
