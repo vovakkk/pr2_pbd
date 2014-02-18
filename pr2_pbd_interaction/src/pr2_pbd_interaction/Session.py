@@ -179,6 +179,7 @@ class Session:
         if (self.current_action_index != None):
             self.actions[self.current_action_index].actions.insert(self._selected_step, step_act)
             self._selected_step += 1
+            rospy.loginfo("added a new step at " + str(self._selected_step))
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
@@ -195,10 +196,11 @@ class Session:
             return False
         
     def delete_last_step(self):
-        '''Removes the last step of the action'''
+        '''Removes the previous selected step of the action'''
         if (self.current_action_index != None):
             if (self._selected_step > 0):
                 self._selected_step -= 1
+                rospy.loginfo("removing step " + str(self._selected_step))
                 self.actions[self.current_action_index].actions.pop(self._selected_step)
             else:
                 rospy.logwarn('Trying to delete step when selected index is zero')

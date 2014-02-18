@@ -122,7 +122,7 @@ class Action:
                     self._write_action(builder, action)
                     builder.end("action")
                 else:
-                    builder.start("action", { "inline" : "False", "id" : str(action.id) })
+                    builder.start("action", { "type" : str(action.type), "inline" : "False", "id" : str(action.id) })
                     builder.end("action")
             builder.end("actions")
         elif (act_obj.type == Action.POSE):

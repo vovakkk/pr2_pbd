@@ -142,7 +142,7 @@ class Interaction:
 
     def create_action(self):
         '''Creates a new empty action'''
-        self.world.clear_all_objects()
+        # self.world.clear_all_objects()
         self.session.new_action()
         Interaction._is_programming = True
         return [RobotSpeech.SKILL_CREATED + ' ' +
@@ -275,25 +275,18 @@ class Interaction:
             traj_step.poses = [{ "timing" : (pose["timing"]
                                 - waited_time + rospy.Duration(0.1)).to_nsec(),
                                 "arms" : [{ "position" : {
-                                    "x" : pose["arms"][a_ind]
-                                        .ee_pose.position.x -
-                                        _relative_motion_start[a_ind].ee_pose.position.x,
-                                    "y" : pose["arms"][a_ind]
-                                        .ee_pose.position.y -
-                                        _relative_motion_start[a_ind].ee_pose.position.y,
-                                    "z" : pose["arms"][a_ind]
-                                        .ee_pose.position.z -
-                                        _relative_motion_start[a_ind].ee_pose.position.z
+                                    "x" : pose["arms"][a_ind]["position"]["x"] -
+                                        _relative_motion_start[a_ind]["position"]["x"],
+                                    "y" : pose["arms"][a_ind]["position"]["y"] -
+                                        _relative_motion_start[a_ind]["position"]["y"],
+                                    "z" : pose["arms"][a_ind]["position"]["z"] -
+                                        _relative_motion_start[a_ind]["position"]["z"],
                                 }, "orientation" : { 
-                                    "x" : pose["arms"][a_ind]
-                                        .ee_pose.orientation.x,
-                                    "y" : pose["arms"][a_ind]
-                                        .ee_pose.orientation.y,
-                                    "z" : pose["arms"][a_ind]
-                                        .ee_pose.orientation.z,
-                                    "w" : pose["arms"][a_ind]
-                                        .ee_pose.orientation.w
-                                }, "joints" : pose["arms"][a_ind].joint_pose } 
+                                    "x" : pose["arms"][a_ind]["orientation"]["x"],
+                                    "y" : pose["arms"][a_ind]["orientation"]["y"],
+                                    "z" : pose["arms"][a_ind]["orientation"]["z"],
+                                    "w" : pose["arms"][a_ind]["orientation"]["w"]
+                                }} 
                                 for a_ind in [0, 1] ] } for pose 
                                 in Interaction._arm_trajectory]
                                                     
@@ -311,10 +304,7 @@ class Interaction:
         '''Saves current arm state into continuous trajectory'''
         if (Interaction._is_recording_motion):
             Interaction._arm_trajectory.append({
-                "arms" : map(lambda a_ind:
-                                ArmState(ArmState.ROBOT_BASE,
-                                        self.robot.get_ee_state(a_ind),
-                                        self.robot.get_joint_state(a_ind), Object()), [0, 1]),
+                "arms" : self.robot.get_arm_state(),
                 "timing" : rospy.Time.now()})
 
     def save_step(self):

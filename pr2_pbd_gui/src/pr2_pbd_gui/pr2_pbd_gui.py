@@ -346,7 +346,7 @@ class PbDGUI(Plugin):
                                 self.recording = False
                                 self.speech_cmd_publisher.publish(Command(
                                         Command.STOP_RECORDING_MOTION))
-                                rospy.loginfo("would have deleted at " + str(ind + 1))
+                                # rospy.loginfo("would have deleted at " + str(ind + 1))
                                 #self.gui_cmd_publisher.publish(
                                         #GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
                                 #self.speech_cmd_publisher.publish(Command(
