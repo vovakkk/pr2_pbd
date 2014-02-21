@@ -241,7 +241,7 @@ class PbDGUI(Plugin):
         rospy.loginfo('Got response from the experiment state service...')
 
         response = exp_state_srv()
-        #response =  { "action_xml" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
+        #response =  { "action_str" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
         self.update_state(response.state)
         
     def _create_table_view(self, model, row_click_cb):
@@ -446,9 +446,8 @@ class PbDGUI(Plugin):
             if (index == state.selected_action):
                 actIcon.selected = True
                 actIcon.updateView()
-        if (state.action_xml != ""):
-            act = Action()
-            act.from_string(state.action_xml)#state['action_xml'])
+        if (state.action_str != ""):
+            act = Action.from_string(state.action_str)#state['action_str'])
             #self.l_model.clear()
             self.disp_action(act)
 

@@ -136,11 +136,9 @@ class Session:
         '''Creates new action'''
         self.current_action_index = len(self.actions)
         self._selected_step = 0
-        newAct = Action()
-        newAct.type = Action.ACTION_QUEUE
+        newAct = Action(type=Action.ACTION_QUEUE, name="Unnamed " + str(newAct.id)) 
         newAct.actions = []
         newAct.save()
-        newAct.name = "Unnamed " + str(newAct.id)
         self.actions.append(newAct)
         self._update_experiment_state()
 

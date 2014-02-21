@@ -68,7 +68,7 @@ window.addEventListener("load", function() {
 		delButSpan.innerHTML = "";
 		stepsSpan.innerHTML = "";
 
-		var actXML = new DOMParser().parseFromString(state.action_xml, "text/xml");
+		var actXML = new DOMParser().parseFromString(state.action_str, "text/xml");
 		var steps = [].slice.call(actXML.querySelectorAll(':root>actions>action'));
 		//html for one step
 		var dispStep = function(stepXml, i) {
