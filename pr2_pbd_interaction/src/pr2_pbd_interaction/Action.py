@@ -13,7 +13,7 @@ import rospy
 import yaml
 
 class Action:
-    ACTION_DIRECTORY = "/home/vladimir/pbd_actions/"
+    ACTION_DIRECTORY = rospy.get_param("/pr2_pbd_interaction/actionsRoot")
     FILE_EXTENSION = ".yaml"
 
     ACTION_QUEUE = 0
@@ -25,10 +25,16 @@ class Action:
     @staticmethod
     def get_file(action):
         return Action.ACTION_DIRECTORY + str(action) + Action.FILE_EXTENSION
+
+    @staticmethod
+    def check_dir_exists():
+        if not os.path.exists(Action.ACTION_DIRECTORY):
+            os.makedirs(Action.ACTION_DIRECTORY)
     
     '''get list of saved action located in the actions folder'''
     @staticmethod
     def get_saved_actions():
+        Action.check_dir_exists()
         return map(Action.load, 
             filter(lambda f: f.endswith(Action.FILE_EXTENSION),
                 filter(isfile, 
@@ -39,6 +45,7 @@ class Action:
         act_f_id is an action id (int) or action file path'''
     @staticmethod
     def load(act_f_id):
+        Action.check_dir_exists()
         file_path = ""
         if (type(act_f_id) is int):
             file_path = Action.get_file(act_f_id)
@@ -65,6 +72,7 @@ class Action:
     
     '''save action to file'''
     def save(self):
+        Action.check_dir_exists()
         '''saves action to file'''
         if (self.id == None):
             self.id = 0

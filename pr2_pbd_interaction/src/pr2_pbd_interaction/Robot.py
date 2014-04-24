@@ -47,7 +47,6 @@ class Robot:
 	'''freze/relax the arms'''
 	def set_arm_mode(self, arm_index, arm_mode):#freese/unfreese
 		controller_name = Robot.SIDE_PREFIX[arm_index] + '_arm_controller'
-		rospy.loginfo("asdlasdj")
 		if (arm_mode == Robot.RELAXED):
 			self.switch_service([], [controller_name], 1)
 		else:
