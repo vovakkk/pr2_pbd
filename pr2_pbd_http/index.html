@@ -5,7 +5,7 @@
 		<title>Programming by Demostration</title>
 		<script src="eventemitter2.js"></script>
 		<script src="roslib.min.js"></script>
-		<script src="yaml.js"></script>
+		<script src="js-yaml.js"></script>
 		<script src="script.js"></script>
 		<style>
 		#actsList div {
@@ -22,8 +22,21 @@
 		#addButs > button, #delButs > button {
 			display: block;
 		}
+
+		@media (min-width: 800px) {
+			body, button, input, select, option {
+				font-size: 30px;
+			}
+
+			button {
+				height: 100px;
+				margin-bottom: 5px;
+				min-width: 50px;
+			}
+		}
 		
 		</style>
+		<meta name="viewport" content="user-scalable=no">
 	</head>
 	<body>
 		<table>
@@ -37,10 +50,17 @@
 			</tr>
 		</table>
 		<button com="execute-action">Execute!</button>
-		<button com="relax-right-arm">Relax right arm</button>
-		<button com="relax-left-arm">Relax left arm</button><br/>
-		<button com="freeze-right-arm">Freeze right arm</button>
-		<button com="freeze-left-arm">Freeze left arm</button>
+		<button com="stop-execution">Stop Execution</button>
+		<div>
+			<span>
+				<button com="relax-left-arm">Relax left arm</button>
+				<button com="freeze-left-arm">Freeze left arm</button>
+			</span>
+			<span>
+				<button com="relax-right-arm">Relax right arm</button>
+				<button com="freeze-right-arm">Freeze right arm</button>
+			</span>
+		</div>	
 		<button com="save-action">Save</button>
 	</body>
 </html>

@@ -15,7 +15,7 @@ from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.Action import Action
 
-
+'''Clickable label subclass'''
 class ClickableLabel(QtGui.QLabel):
     def __init__(self, parent, index, clickCallback):
         QtGui.QLabel.__init__(self, parent)
@@ -26,7 +26,7 @@ class ClickableLabel(QtGui.QLabel):
         self.emit(QtCore.SIGNAL('clicked()'), "Label pressed")
         self.clickCallback(self.index)
 
-
+'''Action icon sublclass'''
 class ActionIcon(QtGui.QGridLayout):
     def __init__(self, parent, index, name, clickCallback):
         QtGui.QGridLayout.__init__(self)
@@ -59,20 +59,23 @@ class PbDGUI(Plugin):
 
     def __init__(self, context):
         super(PbDGUI, self).__init__(context)
+        '''self.recording - is trajectory currently being recorded'''
         self.recording = False
         
         self.setObjectName('PbDGUI')
         self._widget = QWidget()
         
+        '''publishers for contacting the interaction node'''
         self.speech_cmd_publisher = rospy.Publisher('recognized_command', Command)
         self.gui_cmd_publisher = rospy.Publisher('gui_command', GuiCommand)
-        
+
         rospy.Subscriber('experiment_state', ExperimentState, self.exp_state_cb)
         rospy.Subscriber('robotsound', SoundRequest, self.robotSoundReceived)
         
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         self.exp_state_sig.connect(self.update_state)
         
+        '''command dictionary'''
         self.commands = dict()
         self.commands[Command.CREATE_NEW_ACTION] = 'New action'
         self.commands[Command.TEST_MICROPHONE] = 'Test microphone'
@@ -100,6 +103,7 @@ class PbDGUI(Plugin):
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.SAVE_ACTION] = 'Save action'
         
+        '''selected action and step (step not really used)'''
         self.currentAction = -1
         self.currentStep = -1
 
@@ -115,6 +119,7 @@ class PbDGUI(Plugin):
         actionBoxLayout.addLayout(self.actionGrid)
         actionBox.setLayout(actionBoxLayout)
         
+        '''Grid that stores different actions'''
         actionButtonGrid = QtGui.QHBoxLayout()
         actionButtonGrid.addWidget(self.create_button(
                                         Command.CREATE_NEW_ACTION))
@@ -138,6 +143,7 @@ class PbDGUI(Plugin):
         #self.stepsGrid.addWidget(self.l_view, 1, 0)
         #self.stepsGrid.addWidget(self.r_view, 1, 2)
         
+        '''layout that displays all the steps'''
         stepsBoxLayout = QtGui.QHBoxLayout()
         stepsBoxLayout.addLayout(self.stepsGrid)
         self.stepsBox.setLayout(stepsBoxLayout)
@@ -166,6 +172,7 @@ class PbDGUI(Plugin):
         ch_name_but.clicked.connect(change_name)
         actionNameGrid.addWidget(ch_name_but)
 
+        '''gui "speech" commands'''
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
         misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
@@ -243,7 +250,8 @@ class PbDGUI(Plugin):
         response = exp_state_srv()
         #response =  { "action_str" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
         self.update_state(response.state)
-        
+    
+    '''helper method for creating a table view'''
     def _create_table_view(self, model, row_click_cb):
         proxy = QtGui.QSortFilterProxyModel(self)
         proxy.setSourceModel(model)
@@ -255,13 +263,13 @@ class PbDGUI(Plugin):
         view.setSortingEnabled(False)
         view.setCornerButtonEnabled(False)
         return view
-    
+
+    '''Returns a unique id of the marker'''
     def get_uid(self, arm_index, index):
-        '''Returns a unique id of the marker'''
         return (2 * (index + 1) + arm_index)
     
+    '''Returns a unique id of the marker'''
     def get_arm_and_index(self, uid):
-        '''Returns a unique id of the marker'''
         arm_index = uid % 2
         index = (uid - arm_index) / 2
         return (arm_index, (index - 1))
@@ -276,14 +284,19 @@ class PbDGUI(Plugin):
         btn = QtGui.QPushButton(self.commands[command], self._widget)
         btn.clicked.connect(self.command_cb)
         return btn
-        
+    
+    '''main method for displaying an action'''
     def disp_action(self, act):
+        '''set action name in the text box'''
         self.act_name_box.setText(act.name)
+        '''delete previous actions'''
         while (self.stepsGrid.count() > 0):
             wid = self.stepsGrid.itemAt(0).widget()
             self.stepsGrid.removeWidget(wid)
             wid.deleteLater()
             del wid
+
+        '''add first + step button'''
         btnPls = QtGui.QPushButton("+", self._widget)
         def pls_clicked():
             self.gui_cmd_publisher.publish(
@@ -291,7 +304,9 @@ class PbDGUI(Plugin):
             self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
         btnPls.clicked.connect(pls_clicked)
         self.stepsGrid.addWidget(btnPls, 0, 5)
+        '''go through all steps'''
         for ind, sub_act in enumerate(act.actions):
+            '''function defined for closure'''
             def createLayout(ind, sub_act):
                 stepRow = ind + 1
                 typeBox = QtGui.QComboBox(self._widget)
@@ -299,13 +314,16 @@ class PbDGUI(Plugin):
                 typeBox.addItem("Pose")
                 typeBox.addItem("Trajectory")
                 
+                '''event handler of type changed event'''
                 def type_changed():
                     setRow(3 if typeBox.currentIndex() == 2 else typeBox.currentIndex())
                     
                 typeBox.currentIndexChanged.connect(type_changed)
                 self.stepsGrid.addWidget(typeBox, stepRow, 0)
                 
+                '''set type of step'''
                 def setRow(act_type):
+                    '''remove previous stuff from row'''
                     for itm in [self.stepsGrid.itemAtPosition(stepRow, i) 
                             for i in range(1, 4)]:
                         if itm:
@@ -313,7 +331,7 @@ class PbDGUI(Plugin):
                             self.stepsGrid.removeWidget(wid)
                             wid.deleteLater()
                             del wid
-                    if (act_type == Action.ACTION_QUEUE):
+                    if (act_type == Action.ACTION_QUEUE):'''action queue'''
                         act_name = QtGui.QComboBox(self._widget)
                         act_name.addItems(self.action_names)
                         if (sub_act.id != None):
@@ -329,7 +347,7 @@ class PbDGUI(Plugin):
                                     act_name.currentIndex()]))
                         save_but.clicked.connect(change_act)
                         self.stepsGrid.addWidget(save_but, stepRow, 2)
-                    elif (act_type == Action.POSE):
+                    elif (act_type == Action.POSE):'''action pose'''
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
                             self.gui_cmd_publisher.publish(
@@ -338,7 +356,7 @@ class PbDGUI(Plugin):
                             self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
                         rec_but.clicked.connect(hand_rec)
                         self.stepsGrid.addWidget(rec_but, stepRow, 1)
-                    elif (act_type == Action.TRAJECTORY):
+                    elif (act_type == Action.TRAJECTORY):'''action trajectory'''
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
                             if (self.recording):
@@ -361,10 +379,12 @@ class PbDGUI(Plugin):
                         rec_but.clicked.connect(hand_rec)
                         self.stepsGrid.addWidget(rec_but, stepRow, 1)
                 
+                '''set initial type'''
                 typeBox.setCurrentIndex(2 if sub_act.type == Action.TRAJECTORY else sub_act.type)
                 if (sub_act.type == 0):
                     setRow(0)
                 
+                '''add + step button'''
                 btnPls = QtGui.QPushButton("+", self._widget)
                 def pls_clicked():
                     self.gui_cmd_publisher.publish(
@@ -372,6 +392,7 @@ class PbDGUI(Plugin):
                     self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
                 btnPls.clicked.connect(pls_clicked)
                 self.stepsGrid.addWidget(btnPls, stepRow, 5)
+                '''add - step button'''
                 btnMns = QtGui.QPushButton("-", self._widget)
                 def mns_clicked():
                     self.gui_cmd_publisher.publish(

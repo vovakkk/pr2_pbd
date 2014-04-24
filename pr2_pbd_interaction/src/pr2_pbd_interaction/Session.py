@@ -9,8 +9,9 @@ from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
 
+'''Class that holds all of the actions'''
 class Session:
-    '''This class holds and maintains experimental data'''
+    
 
     def __init__(self):
         self._exp_number = None
@@ -136,7 +137,7 @@ class Session:
         '''Creates new action'''
         self.current_action_index = len(self.actions)
         self._selected_step = 0
-        newAct = Action(type=Action.ACTION_QUEUE, name="Unnamed " + str(newAct.id)) 
+        newAct = Action(type=Action.ACTION_QUEUE, name="Unnamed") 
         newAct.actions = []
         newAct.save()
         self.actions.append(newAct)
@@ -173,7 +174,7 @@ class Session:
             return False
 
     def add_step_to_action(self, step_act):
-        '''Add a new step to the current action'''
+        '''Add a new pose step to the current action'''
         if (self.current_action_index != None):
             self.actions[self.current_action_index].actions.insert(self._selected_step, step_act)
             self._selected_step += 1
@@ -183,6 +184,7 @@ class Session:
         self._update_experiment_state()
 
     def add_action_step_action(self, act_name):
+        '''add a new step to the current action, where the step is another action'''
         act = next((act for act in self.actions
                 if act.name == act_name), None)
         if (act != None):
@@ -245,10 +247,12 @@ class Session:
         return self.switch_to_action(self.current_action_index - 1)
         
     def switch_to_action_by_name(self, action_name):
+        '''swithc to another action by the action name'''
         return self.switch_to_action(next((i for i, act in enumerate(self.actions)
                 if act.name == action_name), -1))
     
     def name_action(self, new_name):
+        '''name the action'''
         if (len(self.actions) > 0):
             self.actions[self.current_action_index].name = new_name
             self._update_experiment_state()

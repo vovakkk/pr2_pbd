@@ -35,6 +35,7 @@ class Interaction:
 
     def __init__(self):
         self.robot = Robot()
+        
         #self.world = World()
         #self.session = Session(object_list=self.world.get_frame_list(),
                                #is_debug=True)
@@ -149,6 +150,7 @@ class Interaction:
                 str(self.session.current_action_index), GazeGoal.NOD]
 
     def next_action(self):
+        '''selects the next action'''
         # doing debug with this
         rospy.loginfo(self.robot.get_arm_state())
         return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -272,23 +274,24 @@ class Interaction:
 
             waited_time = Interaction._arm_trajectory[0]["timing"]
             _relative_motion_start = Interaction._arm_trajectory[0]["arms"]
-            traj_step.poses = [{ "timing" : (pose["timing"]
-                                - waited_time + rospy.Duration(0.1)).to_nsec(),
-                                "arms" : [{ "position" : {
-                                    "x" : pose["arms"][a_ind]["position"]["x"] -
-                                        _relative_motion_start[a_ind]["position"]["x"],
-                                    "y" : pose["arms"][a_ind]["position"]["y"] -
-                                        _relative_motion_start[a_ind]["position"]["y"],
-                                    "z" : pose["arms"][a_ind]["position"]["z"] -
-                                        _relative_motion_start[a_ind]["position"]["z"],
-                                }, "orientation" : { 
-                                    "x" : pose["arms"][a_ind]["orientation"]["x"],
-                                    "y" : pose["arms"][a_ind]["orientation"]["y"],
-                                    "z" : pose["arms"][a_ind]["orientation"]["z"],
-                                    "w" : pose["arms"][a_ind]["orientation"]["w"]
-                                }} 
-                                for a_ind in [0, 1] ] } for pose 
-                                in Interaction._arm_trajectory]
+            traj_step.poses = [t_step["arms"] for t_step in Interaction._arm_trajectory]
+            # traj_step.poses = [{ "timing" : (pose["timing"]
+            #                     - waited_time + rospy.Duration(0.1)).to_nsec(),
+            #                     "arms" : [{ "position" : {
+            #                         "x" : pose["arms"][a_ind]["position"]["x"] -
+            #                             _relative_motion_start[a_ind]["position"]["x"],
+            #                         "y" : pose["arms"][a_ind]["position"]["y"] -
+            #                             _relative_motion_start[a_ind]["position"]["y"],
+            #                         "z" : pose["arms"][a_ind]["position"]["z"] -
+            #                             _relative_motion_start[a_ind]["position"]["z"],
+            #                     }, "orientation" : { 
+            #                         "x" : pose["arms"][a_ind]["orientation"]["x"],
+            #                         "y" : pose["arms"][a_ind]["orientation"]["y"],
+            #                         "z" : pose["arms"][a_ind]["orientation"]["z"],
+            #                         "w" : pose["arms"][a_ind]["orientation"]["w"]
+            #                     }} 
+            #                     for a_ind in [0, 1] ] } for pose 
+            #                     in Interaction._arm_trajectory]
                                                     
             self.session.add_step_to_action(traj_step)
             
@@ -373,6 +376,7 @@ class Interaction:
     def speech_command_cb(self, command):
         '''Callback for when a speech command is receieved'''
         if command.command in self.responses.keys():
+            '''callback is a recognized command'''
             rospy.loginfo('\033[32m Calling response for command ' +
                           command.command + '\033[0m')
             response = self.responses[command.command]
@@ -390,10 +394,12 @@ class Interaction:
                     rospy.logwarn('Ignoring speech command during execution: '
                                   + command.command)
         else:
+            '''callback is not a recognized command, check some alternatives'''
             switch_command = "switch-to-action "
             name_command = "name-action "
             add_action_commnad = "add-action-step "
             if (switch_command in command.command):
+                '''switch to action command recognized'''
                 action_name = command.command[
                                 len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
@@ -406,6 +412,7 @@ class Interaction:
                         [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]))
                 response.respond()
             elif (name_command in command.command):
+                '''name action command recognized'''
                 action_name = command.command[
                                 len(name_command):len(command.command)]
                                 
@@ -418,6 +425,7 @@ class Interaction:
                     Response(partial(Interaction.empty_response,
                         [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
             elif (add_action_commnad in command.command):
+                '''add new action command recognized'''
                 action_name = command.command[
                                 len(add_action_commnad):len(command.command)]
                 if (self.session.add_action_step_action(action_name)):

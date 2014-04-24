@@ -1,3 +1,4 @@
+//initialize ros library
 var ros = new ROSLIB.Ros({
 	url : 'ws://' + window.location.hostname + ':9090'
   });
@@ -29,6 +30,7 @@ var expListenerSrvCli = new ROSLIB.Service({
 window.lockUpdate = false;
 
 window.addEventListener("load", function() {
+	//hook up buttons with com attribute to speech commands
 	[].slice.call(document.querySelectorAll("button[com]")).forEach(function(el) {
 		el.addEventListener("click", function() {
 			var relCom = new ROSLIB.Message({
@@ -42,6 +44,47 @@ window.addEventListener("load", function() {
 	var addButSpan = document.querySelector("#addButs");
 	var delButSpan = document.querySelector("#delButs");
 	var stepsSpan = document.querySelector("#curAct");
+
+	var roboState = {
+		recording: false,
+		rightRelaxed: false,
+		leftRelaxed: false
+	};
+
+	var relRightBut = document.querySelector('button[com="relax-right-arm"]');
+	var frzRightBut = document.querySelector('button[com="freeze-right-arm"]');
+	var relLeftBut = document.querySelector('button[com="relax-left-arm"]');
+	var frzLeftBut = document.querySelector('button[com="freeze-left-arm"]');
+
+	//update freeze state ui
+	var onStateUpdate = function() {
+		relRightBut.style.display = roboState.rightRelaxed ? "none" : "inline-block";
+		frzRightBut.style.display = roboState.rightRelaxed ? "inline-block" : "none";
+		relLeftBut.style.display = roboState.leftRelaxed ? "none" : "inline-block";
+		frzLeftBut.style.display = roboState.leftRelaxed ? "inline-block" : "none";
+	};
+	onStateUpdate();
+
+	relRightBut.addEventListener("click", function() {
+		roboState.rightRelaxed = true;
+		onStateUpdate();
+	});
+
+	frzRightBut.addEventListener("click", function() {
+		roboState.rightRelaxed = false;
+		onStateUpdate();
+	});
+
+	relLeftBut.addEventListener("click", function() {
+		roboState.leftRelaxed = true;
+		onStateUpdate();
+	});
+
+	frzLeftBut.addEventListener("click", function() {
+		roboState.leftRelaxed = false;
+		onStateUpdate();
+	});
+
 
 
 	//code for drawing the current action and actions
@@ -68,10 +111,9 @@ window.addEventListener("load", function() {
 		delButSpan.innerHTML = "";
 		stepsSpan.innerHTML = "";
 
-		var actXML = new DOMParser().parseFromString(state.action_str, "text/xml");
-		var steps = [].slice.call(actXML.querySelectorAll(':root>actions>action'));
+		var action = jsyaml.load(state.action_str);
 		//html for one step
-		var dispStep = function(stepXml, i) {
+		var dispStep = function(step_act, i) {
 
 			var outerCont = document.createElement("div");
 
@@ -85,13 +127,13 @@ window.addEventListener("load", function() {
 				var stepCont = document.createElement("span");
 
 				switch (actType) {
-					case "0"://action
+					case 0://action
 						sel.selectedIndex = 0;
 						var actsSelect = document.createElement("select");
 						actsSelect.innerHTML = state.action_names.reduce(function(c, nm) {
 							return c + "<option value='" + nm + "'>" + nm + "</option>";
 						}, "");
-						actsSelect.selectedIndex = state.action_ids.indexOf(parseInt(stepXml.getAttribute("id")));
+						actsSelect.selectedIndex = state.action_ids.indexOf(parseInt(step_act.id));
 						stepCont.appendChild(actsSelect);
 
 						var saveBut = document.createElement("button");
@@ -110,7 +152,7 @@ window.addEventListener("load", function() {
 							}));
 						});
 						break;
-					case "1"://pose
+					case 1://pose
 						sel.selectedIndex = 1;
 						var recPose = document.createElement("button");
 						recPose.innerHTML = "record";
@@ -128,17 +170,16 @@ window.addEventListener("load", function() {
 							}));
 						});
 						break;
-					case "2"://gripper
+					case 2://gripper
 						
 						break;
-					case "3"://trajectory
+					case 3://trajectory
 						sel.selectedIndex = 2;
-						var recording = false;
 						var recBut = document.createElement("button");
 						recBut.innerHTML = "Record";
 						stepCont.appendChild(recBut);
 						recBut.addEventListener("click", function() {
-							if (recording) {
+							if (roboState.recording) {
 								recBut.innerHTML = "Record";
 								speechPub.publish(new ROSLIB.Message({
 									command: "stop-recording-motion"
@@ -157,7 +198,7 @@ window.addEventListener("load", function() {
 									command: "start-recording-motion"
 								}));
 							}
-							recording = !recording;
+							roboState.recording = !roboState.recording;
 						});
 						break;
 				}
@@ -166,14 +207,15 @@ window.addEventListener("load", function() {
 
 			sel.addEventListener("change", function () {
 				outerCont.querySelector("span").remove();
-				outerCont.appendChild(genHtml(sel.value));
+				outerCont.appendChild(genHtml(parseInt(sel.value)));
 			})
 
-			outerCont.appendChild(genHtml(stepXml.getAttribute("type")));
+			outerCont.appendChild(genHtml(step_act.type));
 
 			return outerCont;
 		};
 
+		//button to add a step
 		var addBut = document.createElement("button");
 		addBut.innerHTML = "+";
 		addButSpan.appendChild(addBut);
@@ -187,7 +229,8 @@ window.addEventListener("load", function() {
 			}));
 		});
 
-		steps.forEach(function(sx, i) {
+		//go though action steps and add them all to the gui
+		action.actions.forEach(function(step_act, i) {
 			var delBut = document.createElement("button");
 			delBut.innerHTML = "-";
 			delButSpan.appendChild(delBut);
@@ -213,7 +256,7 @@ window.addEventListener("load", function() {
 					command: "save-pose"
 				}));
 			});
-			stepsSpan.appendChild(dispStep(sx, i));
+			stepsSpan.appendChild(dispStep(step_act, i));
 		});
 	};
 
