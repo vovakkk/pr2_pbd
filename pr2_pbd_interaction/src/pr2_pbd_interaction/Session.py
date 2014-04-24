@@ -9,8 +9,8 @@ from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
 
-'''Class that holds all of the actions'''
 class Session:
+    '''Class that holds all of the actions'''
     
 
     def __init__(self):

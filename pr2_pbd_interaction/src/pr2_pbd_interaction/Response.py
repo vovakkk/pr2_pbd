@@ -1,6 +1,7 @@
 ''' Robot responses in the dialog '''
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
+import rospy
 
 from actionlib import SimpleActionClient
 from RobotSpeech import RobotSpeech
@@ -10,9 +11,9 @@ from sound_play.libsoundplay import SoundClient
 import os
 from pr2_pbd_interaction.msg import RobotSound
 
-
 class Response:
     "Unit of interaction, explains how to respond to a speech command"
+
     # Static stuff
     gaze_client = None
     _sound_client = None
@@ -37,7 +38,6 @@ class Response:
                                RobotSpeech.LEFT_ARM_ALREADY_HOLDING]
     already_released_responses = [RobotSpeech.RIGHT_ARM_ALREADY_RELEASED,
                                 RobotSpeech.LEFT_ARM_ALREADY_RELEASED]
-
     all_sounds = [RobotSound.ALL_POSES_DELETED, RobotSound.ERROR,
                  RobotSound.MICROPHONE_WORKING, RobotSound.POSE_SAVED,
                  RobotSound.START_TRAJECTORY, RobotSound.CREATED_ACTION,
@@ -46,7 +46,6 @@ class Response:
 
     def __init__(self, function_to_call):
         self.function_to_call = function_to_call
-
         if (Response.gaze_client == None):
             Response.gaze_client = SimpleActionClient('gaze_action',
                                                        GazeAction)
@@ -54,9 +53,10 @@ class Response:
 
         if (Response._robot_speech == None):
             Response._robot_speech = RobotSpeech()
-
+        
         if (Response._sound_client == None):
             Response._sound_client = SoundClient()
+        
 
     def respond(self):
         ''' Triggers the defined response'''

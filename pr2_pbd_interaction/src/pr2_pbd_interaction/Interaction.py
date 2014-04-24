@@ -48,6 +48,8 @@ class Interaction:
 
         self._undo_function = None
 
+        
+
         self.responses = {
             Command.TEST_MICROPHONE: Response(partial(Interaction.empty_response,
                                 [RobotSpeech.TEST_RESPONSE, GazeGoal.NOD])),

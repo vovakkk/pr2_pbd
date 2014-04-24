@@ -35,8 +35,8 @@ class Action:
                     map(partial(join, Action.ACTION_DIRECTORY), 
                         listdir(Action.ACTION_DIRECTORY)))))
     
-    '''load an action'''
-        '''act_f_id is an action id (int) or action file path'''
+    '''load an action
+        act_f_id is an action id (int) or action file path'''
     @staticmethod
     def load(act_f_id):
         file_path = ""
@@ -54,10 +54,10 @@ class Action:
     def from_string(str):
         return yaml.load(str)
 
-    '''initialize an actions'''
-        '''id - action id'''
-        '''type - action type'''
-        '''name - action name'''
+    '''initialize an actions
+        id - action id
+        type - action type
+        name - action name'''
     def __init__(self, id=None, type=None, name=None):
         self.type = type
         self.name = name

@@ -15,8 +15,8 @@ from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.Action import Action
 
-'''Clickable label subclass'''
 class ClickableLabel(QtGui.QLabel):
+    '''Clickable label subclass'''
     def __init__(self, parent, index, clickCallback):
         QtGui.QLabel.__init__(self, parent)
         self.index = index
@@ -26,8 +26,8 @@ class ClickableLabel(QtGui.QLabel):
         self.emit(QtCore.SIGNAL('clicked()'), "Label pressed")
         self.clickCallback(self.index)
 
-'''Action icon sublclass'''
 class ActionIcon(QtGui.QGridLayout):
+    '''Action icon sublclass'''
     def __init__(self, parent, index, name, clickCallback):
         QtGui.QGridLayout.__init__(self)
         self.setSpacing(0)
@@ -331,7 +331,8 @@ class PbDGUI(Plugin):
                             self.stepsGrid.removeWidget(wid)
                             wid.deleteLater()
                             del wid
-                    if (act_type == Action.ACTION_QUEUE):'''action queue'''
+                    if (act_type == Action.ACTION_QUEUE):
+                        '''action queue'''
                         act_name = QtGui.QComboBox(self._widget)
                         act_name.addItems(self.action_names)
                         if (sub_act.id != None):
@@ -347,7 +348,8 @@ class PbDGUI(Plugin):
                                     act_name.currentIndex()]))
                         save_but.clicked.connect(change_act)
                         self.stepsGrid.addWidget(save_but, stepRow, 2)
-                    elif (act_type == Action.POSE):'''action pose'''
+                    elif (act_type == Action.POSE):
+                        '''action pose'''
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
                             self.gui_cmd_publisher.publish(
@@ -356,7 +358,8 @@ class PbDGUI(Plugin):
                             self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
                         rec_but.clicked.connect(hand_rec)
                         self.stepsGrid.addWidget(rec_but, stepRow, 1)
-                    elif (act_type == Action.TRAJECTORY):'''action trajectory'''
+                    elif (act_type == Action.TRAJECTORY):
+                        '''action trajectory'''
                         rec_but = QtGui.QPushButton("Record", self._widget)
                         def hand_rec():
                             if (self.recording):
