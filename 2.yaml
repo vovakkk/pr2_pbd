@@ -1,0 +1,25 @@
+!!python/object:pr2_pbd_interaction.Action.Action
+actions:
+- !!python/object:pr2_pbd_interaction.Action.Action
+  arms:
+  - orientation: {w: 0.769595109063, x: -0.0236525966941, y: -0.631307953574, z: -0.0928126636267}
+    position: {x: 0.466960896729, y: -0.35248642139, z: 0.787160900295}
+  - orientation: {w: 0.78914974108, x: 0.106002757678, y: -0.604362919727, z: -0.0274146452857}
+    position: {x: 0.54054222276, y: 0.139693526201, z: 1.0253312188}
+  id: null
+  name: ''
+  target: !!python/object:pr2_pbd_interaction.ObjectType.ObjectType {type_id: 0}
+  type: 1
+- !!python/object:pr2_pbd_interaction.Action.Action
+  arms:
+  - orientation: {w: 0.769584521563, x: -0.0236519129447, y: -0.63133387461, z: -0.0927242684234}
+    position: {x: 0.466984231277, y: -0.352438218613, z: 0.787196895224}
+  - orientation: {w: 0.789149819353, x: 0.106004483298, y: -0.604362617058, z: -0.0274123920484}
+    position: {x: 0.54054151951, y: 0.139696697792, z: 1.0253312188}
+  id: null
+  name: ''
+  target: !!python/object:pr2_pbd_interaction.ObjectType.ObjectType {type_id: 0}
+  type: 1
+id: 2
+name: Test 2
+type: 0

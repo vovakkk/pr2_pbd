@@ -1,0 +1,108 @@
+!!python/object:pr2_pbd_interaction.Action.Action
+actions:
+- !!python/object:pr2_pbd_interaction.Action.Action
+  arms:
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018551, 135003089]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.6916210076096021, -0.25176292453668236, 0.9541342173403679]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.4797737412516709, -0.5071652409165444, 0.5563054932958907, 0.4506936584202776]
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018551, 135174036]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.4026934525117149, 0.5881620944403811, 1.0845551502840256]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.11905398371789509, -0.260206539231602, -0.11688864177515906, 0.9510287857504475]
+  id: null
+  name: null
+  target: !!python/object:pr2_pbd_interaction.ObjectType.ObjectType {type_id: 0}
+  type: 1
+- !!python/object:pr2_pbd_interaction.Action.Action
+  arms:
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018552, 632874965]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.6410119591491106, 0.15661827105482157, 0.9528727586477462]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.4406811249787069, -0.5485102717284261, 0.6363192624257888, 0.31628219071235963]
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018552, 632939100]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.40267990845591617, 0.5881490910448145, 1.0845917059266639]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.11901298855102475, -0.2602165425151473, -0.116895057542317, 0.951030391249299]
+  id: null
+  name: null
+  target: !!python/object:pr2_pbd_interaction.ObjectType.ObjectType {type_id: 0}
+  type: 1
+- !!python/object:pr2_pbd_interaction.Action.Action
+  arms:
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018555, 449913978]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.6652447409889093, -0.27767476986682904, 0.9617123553936895]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.5625241001912439, -0.4714392974599523, 0.5648030662437111, 0.3772388127913143]
+  - !!python/object/new:geometry_msgs.msg._PoseStamped.PoseStamped
+    state:
+    - !!python/object/new:std_msgs.msg._Header.Header
+      state:
+      - 0
+      - !!python/object/new:rospy.rostime.Time
+        state: [1393018555, 449944019]
+      - /odom_combined
+    - !!python/object/new:geometry_msgs.msg._Pose.Pose
+      state:
+      - !!python/object/new:geometry_msgs.msg._Point.Point
+        state: [0.4026157854578393, 0.588190825945459, 1.084636513278998]
+      - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+        state: [-0.11902184103993801, -0.26029346578806906, -0.11686616319771734,
+          0.9510117837981523]
+  id: null
+  name: null
+  target: !!python/object:pr2_pbd_interaction.ObjectType.ObjectType {type_id: 0}
+  type: 1
+id: 3
+name: Unnamed
+type: 0
