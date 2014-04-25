@@ -6,11 +6,11 @@ This is the branch for development to Hydro & Catkin. Please see the [issues pag
 ## Python resources
 
 ### Style guides
-- [pep8](http://legacy.python.org/dev/peps/pep-0008/): main style guide
-- [docstrings](http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html): just use single quotes (') instead of double (")
+- [pep8](http://legacy.python.org/dev/peps/pep-0008/) (main style guide)
+- [docstrings](http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html) (note that we use single quotes (') instead of double ("))
 
 ### Linting tools
-- [sublime linting framework](https://github.com/SublimeLinter/SublimeLinter3), [pylint](https://sublime.wbond.net/packages/SublimeLinter-pylint), [pep8](https://github.com/SublimeLinter/SublimeLinter-pep8)
+- [sublime linting framework](https://github.com/SublimeLinter/SublimeLinter3), [pylint](https://sublime.wbond.net/packages/SublimeLinter-pylint), [pep8](https://github.com/SublimeLinter/SublimeLinter-pep8) (for linting in sublime)
 
 ### Keywords not to use
 ```python
