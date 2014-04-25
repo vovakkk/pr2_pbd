@@ -1,92 +1,172 @@
+'''Representation of a programmed action.
+
+This module handles the interface between the YAML and Python
+represetnations of a programmed action.
+'''
+
+# These ROS imports must come first.
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
-from ObjectType import ObjectType
-
-#functional code
-from functools import partial
-
-import os.path
-from os import listdir
-from os.path import isfile, join
-import rospy
+# Standard library imports.
+import functools
+import os
 import yaml
 
-class Action:
-    ACTION_DIRECTORY = rospy.get_param("/pr2_pbd_interaction/actionsRoot")
-    FILE_EXTENSION = ".yaml"
+# 3rd party imports (e.g. ROS).
+import rospy
 
+
+class Action:
+    '''Pthon representation of a programmed action.
+
+    An instance of this class represents one programmed action.
+
+    Actions can have one of the following types:
+        Action.ACTION_QUEUE
+        Action.POSE
+        Action.GRIPPER
+        Action.TRAJECTORY
+    '''
+
+    action_directory = rospy.get_param("/pr2_pbd_interaction/actionsRoot")
+    file_extension = ".yaml"
+
+    # The list of Action types.
+    # TODO(max): There are a couple options for how we could clean this
+    # up. (1) Use Enums (introduced in Python 3.4, could import them).
+    # (2) Do an OO-approach by making a base class and having each of
+    # these extend it. These look like step types rather than action
+    # types, though, and there's no clear reason now, so I'll wait.
     ACTION_QUEUE = 0
     POSE = 1
     GRIPPER = 2
     TRAJECTORY = 3
 
-    '''get a specifi action file from action id'''
-    @staticmethod
-    def get_file(action):
-        return Action.ACTION_DIRECTORY + str(action) + Action.FILE_EXTENSION
+    ####################################################################
+    # INSTANCE METHODS
+    ####################################################################
 
-    @staticmethod
-    def check_dir_exists():
-        if not os.path.exists(Action.ACTION_DIRECTORY):
-            os.makedirs(Action.ACTION_DIRECTORY)
-    
-    '''get list of saved action located in the actions folder'''
-    @staticmethod
-    def get_saved_actions():
-        Action.check_dir_exists()
-        return map(Action.load, 
-            filter(lambda f: f.endswith(Action.FILE_EXTENSION),
-                filter(isfile, 
-                    map(partial(join, Action.ACTION_DIRECTORY), 
-                        listdir(Action.ACTION_DIRECTORY)))))
-    
-    '''load an action
-        act_f_id is an action id (int) or action file path'''
-    @staticmethod
-    def load(act_f_id):
-        Action.check_dir_exists()
-        file_path = ""
-        if (type(act_f_id) is int):
-            file_path = Action.get_file(act_f_id)
-        else:
-            file_path = act_f_id
-        act_file = open(file_path, 'r')
-        act = Action.from_string(act_file)
-        act_file.close()
-        return act
+    def __init__(self, act_id=None, act_type=None, act_name=None):
+        '''Create an action without initialization.
 
-    '''load an action from a string'''
-    @staticmethod
-    def from_string(str):
-        return yaml.load(str)
+        Args:
+            act_id (int, optional): id of the action. Defaults to None.
+            act_type (int [see Action.* class variables], optional):
+                Type of the action. Defaults to None.
+            act_name (str, optional): Name of the action. Defaults to
+                None.
+        '''
+        self.id = act_id
+        self.type = act_type
+        self.name = act_name
 
-    '''initialize an actions
-        id - action id
-        type - action type
-        name - action name'''
-    def __init__(self, id=None, type=None, name=None):
-        self.type = type
-        self.name = name
-        self.id = id     
-    
-    '''save action to file'''
     def save(self):
-        Action.check_dir_exists()
-        '''saves action to file'''
-        if (self.id == None):
+        '''Saves action to file with its id.
+
+        Finds a new id if it doesn't have one yet, avoiding collisions
+        with existing files. Saves to Action.action_directory.
+        '''
+        Action.ensure_dir_exists()
+        if (self.id is None):
             self.id = 0
             while (os.path.isfile(self.get_file(self.id))):
                 self.id += 1
         act_file = open(self.get_file(self.id), 'w')
         act_file.write(self.to_string())
         act_file.close()
-    
-    '''convert action to a string'''
+
     def to_string(self):
-        '''gets the yaml representing this action'''
+        '''Serializes action into YAML string.
+
+        Returns:
+            str: YAML representation of this action.
+        '''
         return yaml.dump(self)
-        
-    '''make a shallow copy of the action (sub actions are not copied, sub steps are)'''
+
     def copy(self):
+        '''Returns a shallow copy of the action.
+
+        Copies sub-steps but not sub-actions.
+
+        Returns:
+            Action : new action that is shallow copy of self.
+        '''
         return Action.from_string(self.to_string())
+
+    ####################################################################
+    # CLASS METHODS
+    ####################################################################
+
+    @classmethod
+    def ensure_dir_exists(cls):
+        '''Ensures that the default actiondirectory exists by first
+        checking and then creating it if it doesn't.
+        '''
+        if not os.path.exists(cls.action_directory):
+            os.makedirs(cls.action_directory)
+
+    ####################################################################
+    # STATIC METHODS
+    ####################################################################
+
+    @staticmethod
+    def get_file(action_id):
+        '''Get a specific action file from an action id.
+
+        Args:
+            action_id (int): The id of the action to get.
+
+        Returns:
+            str: The full path to the action file specified by
+                action_id.
+        '''
+        return Action.action_directory + str(action_id) + Action.file_extension
+
+    @staticmethod
+    def get_saved_actions():
+        '''Returns a list of all Actions in the default actions dir.
+
+        Returns:
+            list(Action)
+        '''
+        Action.ensure_dir_exists()
+        candidates = [os.path.join(Action.action_directory, f) for f in
+                os.path.listdir(Action.action_directory)]
+        return [Action.load(c) for c in candidates if os.path.isfile(c)
+                and c.endsWith(Action.file_extension)]
+
+    @staticmethod
+    def load(act_f_id):
+    '''Load an action from a file.
+
+        Args:
+            act_f_id (int|str): Either the action id or the full path of
+                the action to load.
+
+        Returns:
+            Action
+        '''
+        Action.ensure_dir_exists()
+        if type(act_f_id) is int:
+            file_path = Action.get_file(act_f_id)
+        else:
+            file_path = act_f_id
+        # TODO(max): How is this used? We should either document the
+        # exception so callers can try/except it, or return None (and
+        # document it).
+        with act_file as open(file_path, 'r'):
+            return Action.from_string(act_file)
+
+    @staticmethod
+    def from_string(act_str):
+        '''Load an action from a YAML-formatted string.
+
+        Args:
+            act_str (str): YAML-representation of action in a string, as
+                retruned by to_string().
+
+        Returns:
+            Action : An Action instance with all state from act_str.
+        '''
+        return yaml.load(act_str)
