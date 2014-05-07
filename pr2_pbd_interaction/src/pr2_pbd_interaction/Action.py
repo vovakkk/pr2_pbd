@@ -16,7 +16,6 @@ import yaml
 # 3rd party imports (e.g. ROS).
 import rospy
 
-
 class Action:
     '''Pthon representation of a programmed action.
 
@@ -138,7 +137,7 @@ class Action:
 
     @staticmethod
     def load(act_f_id):
-    '''Load an action from a file.
+        '''Load an action from a file.
 
         Args:
             act_f_id (int|str): Either the action id or the full path of
@@ -155,7 +154,7 @@ class Action:
         # TODO(max): How is this used? We should either document the
         # exception so callers can try/except it, or return None (and
         # document it).
-        with act_file as open(file_path, 'r'):
+        with open(file_path, 'r') as act_file:
             return Action.from_string(act_file)
 
     @staticmethod
