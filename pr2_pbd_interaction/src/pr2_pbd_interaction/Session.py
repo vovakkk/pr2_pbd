@@ -11,7 +11,7 @@ from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
 class Session:
     '''Class that holds all of the actions'''
-    
+
 
     def __init__(self):
         self._exp_number = None
@@ -35,7 +35,7 @@ class Session:
             act.actions = [next((self_act for self_act in self.actions if
                     self_act.id == child_act.id), None)
                         if child_act.type == Action.ACTION_QUEUE else child_act
-                        for child_act in 
+                        for child_act in
                         act.actions]
 
         self._state_publisher = rospy.Publisher('experiment_state',
@@ -63,7 +63,7 @@ class Session:
     def _get_experiment_state(self):
         ''' Creates a message with the latest state'''
         return ExperimentState(
-            (self.actions[self.current_action_index].to_string() 
+            (self.actions[self.current_action_index].to_string()
             if self.current_action_index != None
             else ""),
             map(lambda act: act.name, self.actions),
@@ -137,7 +137,7 @@ class Session:
         '''Creates new action'''
         self.current_action_index = len(self.actions)
         self._selected_step = 0
-        newAct = Action(type=Action.ACTION_QUEUE, name="Unnamed") 
+        newAct = Action(act_type=Action.ACTION_QUEUE, act_name="Unnamed")
         newAct.actions = []
         newAct.save()
         self.actions.append(newAct)
@@ -194,7 +194,7 @@ class Session:
         else:
             rospy.logwarn("Action " + act_name + " not found")
             return False
-        
+
     def delete_last_step(self):
         '''Removes the previous selected step of the action'''
         if (self.current_action_index != None):
@@ -207,7 +207,7 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
-        
+
     def resume_deleted_step(self):
         '''Resumes the deleted step'''
         rospy.logwarn('Unimplemented undo')
@@ -241,22 +241,22 @@ class Session:
     def next_action(self):
         '''Switches to next action'''
         return self.switch_to_action(self.current_action_index + 1)
-        
+
     def previous_action(self):
         '''Switches to previous action'''
         return self.switch_to_action(self.current_action_index - 1)
-        
+
     def switch_to_action_by_name(self, action_name):
         '''swithc to another action by the action name'''
         return self.switch_to_action(next((i for i, act in enumerate(self.actions)
                 if act.name == action_name), -1))
-    
+
     def name_action(self, new_name):
         '''name the action'''
         if (len(self.actions) > 0):
             self.actions[self.current_action_index].name = new_name
             self._update_experiment_state()
-        
+
     def n_frames(self):
         '''Returns the number of frames'''
         if (self.current_action_index != None):
@@ -264,7 +264,7 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             return 0
-    
+
     def frame_types(self):
         '''returns frame types'''
         if (self.current_action_index != None):
