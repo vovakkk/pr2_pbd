@@ -131,7 +131,7 @@ class Action:
         '''
         Action.ensure_dir_exists()
         candidates = [os.path.join(Action.action_directory, f) for f in
-                os.path.listdir(Action.action_directory)]
+                os.listdir(Action.action_directory)]
         return [Action.load(c) for c in candidates if os.path.isfile(c)
                 and c.endsWith(Action.file_extension)]
 
