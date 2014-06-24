@@ -133,7 +133,7 @@ class Action:
         candidates = [os.path.join(Action.action_directory, f) for f in
                 os.listdir(Action.action_directory)]
         return [Action.load(c) for c in candidates if os.path.isfile(c)
-                and c.endsWith(Action.file_extension)]
+                and c.endswith(Action.file_extension)]
 
     @staticmethod
     def load(act_f_id):
