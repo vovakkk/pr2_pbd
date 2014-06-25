@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>  
+	<!-- This file will launch gazebo and a bunch of other stuff needed to launch pbd, but pbd itself -->
+
+	<!-- It won't launch the gui or the python server though -->
+
+	<include file="$(find pr2_gazebo)/launch/pr2_empty_world.launch" />
+
+	<include file="$(find pr2_social_gaze)/launch/gaze.launch" />
+
+	<include file="$(find pr2_moveit_config)/launch/move_group.launch" />
+
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+	<include file="$(find pr2_pbd_http)/launch/http_server.launch" />
+
+</launch>
