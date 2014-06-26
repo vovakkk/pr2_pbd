@@ -106,6 +106,8 @@ window.addEventListener("load", function() {
 		actsListCont.querySelectorAll("div")[state.selected_action].className = 
 			"selected";
 
+		newNameInp.value = state.action_names[state.selected_action];
+
 		//current action:
 		addButSpan.innerHTML = "";
 		delButSpan.innerHTML = "";
@@ -267,5 +269,21 @@ window.addEventListener("load", function() {
 
 	expListenerSrvCli.callService(new ROSLIB.ServiceRequest({}), function(result) {
 		drawState(result.state);
+	});
+
+	var overlayDiv = document.querySelector("#overlay");
+	var newNameInp = document.querySelector("#newName");
+
+	document.querySelector("#renPopup").addEventListener("click", function() {
+		overlayDiv.style.display = "";
+	});
+	document.querySelector("#doRename").addEventListener("click", function() {
+		speechPub.publish(new ROSLIB.Message({
+			command: "name-action " + newNameInp.value
+		}));
+		overlayDiv.style.display = "none";
+	});
+	document.querySelector("#cancelRename").addEventListener("click", function() {
+		overlayDiv.style.display = "none";
 	});
 });

@@ -120,7 +120,7 @@ class Action:
             str: The full path to the action file specified by
                 action_id.
         '''
-        return Action.action_directory + str(action_id) + Action.file_extension
+        return os.path.join(Action.action_directory, str(action_id) + Action.file_extension)
 
     @staticmethod
     def get_saved_actions():

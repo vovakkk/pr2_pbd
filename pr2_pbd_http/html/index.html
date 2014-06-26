@@ -8,6 +8,36 @@
 		<script src="js-yaml.js"></script>
 		<script src="script.js"></script>
 		<style>
+
+		html, body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+
+		#overlay {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			position: absolute;
+			top: 0;
+			left: 0;
+			background: rgba(60, 60, 60, 0.3);
+			display: flex;
+			justify-content: center;
+			flex-direction: column;
+			align-content: center;
+		}
+
+		#renameBox {
+			max-width: 500px;
+			margin-left: auto;
+			margin-right: auto;
+			background: black;
+		}
+
 		#actsList div {
 			background-color: #000;
 			color: #fff;
@@ -52,6 +82,7 @@
 		<button com="create-new-action">New Action</button>
 		<button com="execute-action">Execute!</button>
 		<button com="stop-execution">Stop Execution</button>
+		<button id="renPopup">Rename</button>
 		<div>
 			<span>
 				<button com="relax-left-arm">Relax left arm</button>
@@ -63,5 +94,12 @@
 			</span>
 		</div>	
 		<button com="save-action">Save</button>
+		<div id="overlay" style="display: none;">
+			<div id="renameBox">
+				<input id="newName" />
+				<button id="doRename">Rename</button>
+				<button id="cancelRename">Cancel</button>
+			</div>
+		</div>
 	</body>
 </html>

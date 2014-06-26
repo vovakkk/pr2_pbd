@@ -20,7 +20,7 @@ def server():
     Protocol = "HTTP/1.0"
 
     port = rospy.get_param("~port", "8000")
-    server_address = ('127.0.0.1', port)
+    server_address = ('0.0.0.0', port)
 
     HandlerClass.protocol_version = Protocol
     httpd = ServerClass(server_address, HandlerClass)
