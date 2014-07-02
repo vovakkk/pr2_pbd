@@ -18,7 +18,8 @@ from Session import Session
 from Response import Response
 from Robot import Robot
 from Action import Action
-from ObjectType import ObjectType
+from World import World
+from MarkerHandler import MarkerHandler
 from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import Object
 from pr2_pbd_interaction.msg import GuiCommand
@@ -34,11 +35,8 @@ class Interaction:
     _arm_trajectory = None
 
     def __init__(self):
-        self.robot = Robot()
+        # self.robot = Robot()
         
-        #self.world = World()
-        #self.session = Session(object_list=self.world.get_frame_list(),
-                               #is_debug=True)
         self.session = Session()
         self._viz_publisher = rospy.Publisher('visualization_marker_array',
                                               MarkerArray)
@@ -78,6 +76,11 @@ class Interaction:
             Command.SAVE_ACTION: Response(self.save_experiment_state)
         }
 
+
+        self.world = World()
+        self.world.scan_landmarks()
+        
+        self.markerHandler = MarkerHandler()
 
         rospy.loginfo('Interaction initialized.')
 
@@ -465,36 +468,11 @@ class Interaction:
 
     def update(self):
         '''General update for the main loop'''
-        # self.robot.update()
 
-        # if (self.robot.status != ExecutionStatus.NOT_EXECUTING):
-        #     if (self.robot.status != ExecutionStatus.EXECUTING):
-        #         self._end_execution()
         if (Interaction._is_recording_motion):
             self._save_arm_to_trajectory()
 
-        #is_world_changed = self.world.update()
-        #if (self.session.n_actions() > 0):
-            #action = self.session.get_current_action()
-            #action.update_viz()
-            #r_target = action.get_requested_targets(0)
-            #if (r_target != None):
-                #self.robot.start_move_to_pose(r_target, 0)
-                #action.reset_targets(0)
-            #l_target = action.get_requested_targets(1)
-            #if (l_target != None):
-                #self.robot.start_move_to_pose(l_target, 1)
-                #action.reset_targets(1)
-
-            #action.delete_requested_steps()
-
-            #states = self._get_arm_states()
-            #action.change_requested_steps(states[0], states[1])
-
-            #if (is_world_changed):
-                #rospy.loginfo('The world has changed.')
-                #self.session.get_current_action().update_objects(
-                                        #self.world.get_frame_list())
+        self.markerHandler.update(self.world)
 
         time.sleep(0.1)
 

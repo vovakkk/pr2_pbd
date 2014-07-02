@@ -9,7 +9,6 @@ import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
 # Standard library imports.
-import functools
 import os
 import yaml
 
