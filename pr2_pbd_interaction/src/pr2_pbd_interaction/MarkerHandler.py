@@ -5,19 +5,19 @@ import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
 import rospy
-from visualization_msgs.msg import MarkerArray, Marker
+from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, Pose, Quaternion
 from ObjectDescriptor import ObjectDescriptor
 
 class MarkerHandler:
 
     def __init__(self):
-        self.marker_pub = rospy.Publisher('/visualization_marker_array', MarkerArray, queue_size=10)
+        self.marker_pub = rospy.Publisher('/visualization_marker', Marker, queue_size=10)
         self.prev_markers = 0
 
     def update(self, world):
         objs = world.get_landmarks()
-        markers = MarkerArray()
+        markers = []
 
         
         objId = 0
@@ -50,7 +50,7 @@ class MarkerHandler:
                     m.color.r = 1.0
                     m.color.g = 0.5
                     m.color.b = 0.5
-                markers.markers.append(m)
+                markers.append(m)
                 objId += 1
         for i in range(objId, self.prev_markers):
             m = Marker()
@@ -59,6 +59,7 @@ class MarkerHandler:
             m.ns = "pbd"
             m.id = i
             m.action = Marker.DELETE
-            markers.markers.append(m)
-        self.marker_pub.publish(markers)
+            markers.append(m)
+        for marker in markers:
+            self.marker_pub.publish(marker)
         self.prev_markers = len(objs)
