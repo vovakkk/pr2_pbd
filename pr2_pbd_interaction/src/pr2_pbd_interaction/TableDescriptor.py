@@ -14,14 +14,16 @@ class TableDescriptor:
         Args:
             data (no type required): the data 
         '''
-        pass
 
-    def compare(self, data):
-        '''This method compares the data and provides a number score
+        '''This variable is the friendly name for the descriptor'''
+        self.friendly_name = "table"
+
+    def compare(self, descriptor):
+        '''This method compares self to the descriptor and provides a number score
         that reflects how good of a descriptor it is. Higher number means
-        better descriptor.
+        better descriptor. Negative number if unacceptable.
 
         Args:
-            data (unknown type): the data to compare to
+            descriptor (LandmarkDescriptor): the data to compare to
         '''
-        return 0
+        return 1 if isinstance(descriptor, TableDescriptor) else -1

@@ -7,6 +7,7 @@ roslib.load_manifest('pr2_pbd_interaction')
 import rospy
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point, Pose, Quaternion
+from ObjectDescriptor import ObjectDescriptor
 
 class MarkerHandler:
 
@@ -37,7 +38,18 @@ class MarkerHandler:
                 m.color.r = 0.0
                 m.color.g = 1.0
                 m.color.b = 0.0
-                # rospy.loginfo(m)
+                if (obj.descriptor.color == ObjectDescriptor.RED):
+                    m.color.r = 1.0
+                    m.color.g = 0.0
+                    m.color.b = 0.0
+                if (obj.descriptor.color == ObjectDescriptor.BLUE):
+                    m.color.r = 0.0
+                    m.color.g = 0.0
+                    m.color.b = 1.0
+                if (obj.descriptor.color == ObjectDescriptor.PINK):
+                    m.color.r = 1.0
+                    m.color.g = 0.5
+                    m.color.b = 0.5
                 markers.markers.append(m)
                 objId += 1
         for i in range(objId, self.prev_markers):

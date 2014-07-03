@@ -16,6 +16,7 @@ class Session:
     def __init__(self):
         self._exp_number = None
         self._selected_step = 0
+        self.object_names = []
 
         # if (is_debug):
         #     self._exp_number = rospy.get_param(
@@ -69,7 +70,8 @@ class Session:
             map(lambda act: act.name, self.actions),
             map(lambda act: act.id, self.actions),
             0 if self.current_action_index == None else self.current_action_index,
-            self._selected_step)
+            self._selected_step,
+            self.object_names)
 
     def _get_ref_frames(self, arm_index):
         ''' Returns the reference frames for the steps of the
@@ -257,6 +259,23 @@ class Session:
             self.actions[self.current_action_index].name = new_name
             self._update_experiment_state()
 
+    def set_action_landmark_type(self, descriptor, arm_ind, prev_mark, new_mark):
+        '''Sets the action landmark type'''
+        if (len(self.actions) > 0):
+            cur_act = self.actions[self.current_action_index].actions[
+                self._selected_step]
+            cur_act.landmark_types[arm_ind] = descriptor
+            pose = cur_act.arms[arm_ind]
+            pose.pose.position.x = pose.pose.position.x - new_mark.pose.position.x + prev_mark.pose.position.x
+            pose.pose.position.y = pose.pose.position.y - new_mark.pose.position.y + prev_mark.pose.position.y
+            pose.pose.position.z = pose.pose.position.z - new_mark.pose.position.z + prev_mark.pose.position.z
+            self._update_experiment_state()
+
+    def set_step_scan(self, scan_code):
+        if (len(self.actions) > 0):
+            self.actions[self.current_action_index].actions[self._selected_step].scan_code = scan_code
+            self._update_experiment_state()
+
     def n_frames(self):
         '''Returns the number of frames'''
         if (self.current_action_index != None):
@@ -272,3 +291,6 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             return []
+
+    def update_object_names(self, new_names):
+        self.object_names = new_names

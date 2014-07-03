@@ -1,12 +1,10 @@
-'''This file is an "interface" used just for documentation.
+'''This module is a descriptor of a robot
 '''
 
-class LandmarkDescriptor:
+class RobotDescriptor:
     '''All descriptors should include the methods specified here
     '''
 
-    '''This variable is the friendly name for the descriptor'''
-    friendly_name = ""
 
     def __init__(self, data):
         '''Initializes a descriptor given the specified data.
@@ -16,7 +14,8 @@ class LandmarkDescriptor:
         Args:
             data (unknown type): the data 
         '''
-        pass
+        '''This variable is the friendly name for the descriptor'''
+        self.friendly_name = "robot"
 
     def compare(self, descriptor):
         '''This method compares self to the descriptor and provides a number score
@@ -26,4 +25,4 @@ class LandmarkDescriptor:
         Args:
             descriptor (LandmarkDescriptor): the data to compare to
         '''
-        pass
+        return 1 if isinstance(descriptor, RobotDescriptor) else -1

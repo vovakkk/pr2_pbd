@@ -204,6 +204,51 @@ window.addEventListener("load", function() {
 						});
 						break;
 				}
+
+				["right", "left"].forEach(function(arm_name, arm_ind) {
+					var selRefFrame = document.createElement("select");
+					state.object_names.forEach(function(oName) {
+						var opt = document.createElement("option");
+						opt.value = oName;
+						opt.innerHTML = oName;
+						selRefFrame.appendChild(opt);
+					});
+					var spanSideName = document.createElement("span");
+					spanSideName.appendChild(document.createTextNode(arm_name + " reference frame"));
+					stepCont.appendChild(spanSideName);
+
+					stepCont.appendChild(selRefFrame);
+					selRefFrame.addEventListener("change", function() {
+						guiPub.publish(new ROSLIB.Message({
+							command: "select-action-step",
+							param: (i)
+						}));
+						speechPub.publish(new ROSLIB.Message({
+							command: "set-step-relativity-" + arm_name + " " + selRefFrame.value
+						}));
+					});
+					selRefFrame.selectedIndex = state.object_names.indexOf(step_act.landmark_types[arm_ind].friendly_name);
+				});
+
+				var selScanMode = document.createElement("select");
+				["set-step-to-no-scan", "set-step-to-scan", "set-step-to-scan-move-arms"].forEach(function(oName) {
+					var opt = document.createElement("option");
+					opt.value = oName;
+					opt.innerHTML = oName;
+					selScanMode.appendChild(opt);
+				});
+				stepCont.appendChild(selScanMode);
+				selScanMode.addEventListener("change", function() {
+					guiPub.publish(new ROSLIB.Message({
+						command: "select-action-step",
+						param: (i)
+					}));
+					speechPub.publish(new ROSLIB.Message({
+						command: selScanMode.value
+					}));
+				});
+				selScanMode.selectedIndex = step_act.scan_code;
+
 				return stepCont;
 			};
 

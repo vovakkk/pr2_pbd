@@ -13,6 +13,7 @@ string REPEAT_LAST_STEP = repeat-last-step
 string FREEZE_RIGHT_ARM = freeze-right-arm
 string FREEZE_LEFT_ARM = freeze-left-arm
 string RECORD_OBJECT_POSE = record-object-pose
+string RECORD_OBJECT_POSE_MOVE_ARMS = record-object-pose-move-arms
 string CREATE_NEW_ACTION = create-new-action
 string EXECUTE_ACTION = execute-action
 string NEXT_ACTION = next-action
@@ -26,4 +27,9 @@ string ADD_ACTION_STEP = add-action-step
 string CHANGE_ACTION_NAME = name-action
 string SWITCH_TO_ACTION = switch-to-action
 string UNRECOGNIZED = unrecognized
+string SET_STEP_RELATIVITY_RIGHT = set-step-relativity-right
+string SET_STEP_RELATIVITY_LEFT = set-step-relativity-left
+string SET_STEP_TO_SCAN = set-step-to-scan
+string SET_STEP_TO_NO_SCAN = set-step-to-no-scan
+string SET_STEP_TO_SCAN_MOVE_ARMS = set-step-to-scan-move-arms
 string command

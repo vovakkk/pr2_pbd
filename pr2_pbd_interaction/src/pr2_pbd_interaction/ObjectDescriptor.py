@@ -8,6 +8,14 @@ class ObjectDescriptor:
     '''This class handles the descriptor of an object
     '''
 
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+    PINK = 3
+
+    '''This variable is the friendly name for the descriptor'''
+    friendly_name = "object"
+
     def getVals(self, data):
         '''This helper method returns an array containing the max, min,
         and average radii
@@ -31,7 +39,7 @@ class ObjectDescriptor:
             avgRad += rad(pt) / len(data.points)
         return [maxRad, minRad, avgRad]
 
-    def __init__(self, data):
+    def __init__(self, data, color):
         '''Initializes a descriptor given the specified data.
         It should extract needed features from the data and store
         them.
@@ -40,14 +48,17 @@ class ObjectDescriptor:
             data (sensor_msgs.PointCloud): the data
         '''
         self.descVals = self.getVals(data)
+        self.color = color
+        self.friendly_name = ["red", "green", "blue", "pink"][self.color] + " object"
 
-    def compare(self, data):
-        '''This method compares the data and provides a number score
+    def compare(self, descriptor):
+        '''This method compares self to the descriptor and provides a number score
         that reflects how good of a descriptor it is. Higher number means
-        better descriptor.
+        better descriptor. Negative number if unacceptable.
 
         Args:
-            data (sensor_msgs.PointCloud): the data to compare to
+            descriptor (LandmarkDescriptor): the data to compare to
         '''
-        return -reduce(operator.add, map(abs, map(operator.sub, 
-            zip(self.getVals(data), self.descVals))), 0)
+        return (1 / (0.00001 + reduce(operator.add, map(abs, map(lambda (a, b): a - b, 
+            zip(descriptor.descVals, self.descVals))), 0))
+            if isinstance(descriptor, ObjectDescriptor) else -1)

@@ -26,7 +26,6 @@ from pr2_pbd_interaction.msg import GuiCommand
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
 
-
 class Interaction:
     '''Finite state machine for the human interaction'''
 
@@ -35,9 +34,12 @@ class Interaction:
     _arm_trajectory = None
 
     def __init__(self):
-        # self.robot = Robot()
+        self.robot = Robot()
         
         self.session = Session()
+        self.world = World()
+        self.session.update_object_names([lmark.descriptor.friendly_name for lmark in 
+                self.world.get_landmarks()])
         self._viz_publisher = rospy.Publisher('visualization_marker_array',
                                               MarkerArray)
 
@@ -69,16 +71,23 @@ class Interaction:
             Command.NEXT_ACTION: Response(self.next_action),
             Command.PREV_ACTION: Response(self.previous_action),
             Command.SAVE_POSE: Response(self.save_step),
-            Command.RECORD_OBJECT_POSE: Response(self.record_object_pose),
+            Command.RECORD_OBJECT_POSE: Response(partial(
+                                self.record_object_pose, False)),
+            Command.RECORD_OBJECT_POSE_MOVE_ARMS: Response(partial(
+                                self.record_object_pose, True)),
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording),
-            Command.SAVE_ACTION: Response(self.save_experiment_state)
+            Command.SAVE_ACTION: Response(self.save_experiment_state),
+            Command.SET_STEP_TO_SCAN: Response(partial(self.set_step_to_scan,
+                                        Action.SCAN)),
+            Command.SET_STEP_TO_NO_SCAN: Response(partial(self.set_step_to_scan,
+                                        Action.NO_SCAN)),
+            Command.SET_STEP_TO_SCAN_MOVE_ARMS: Response(partial(self.set_step_to_scan,
+                                        Action.SCAN_MOVE_ARMS))
         }
 
 
-        self.world = World()
-        self.world.scan_landmarks()
         
         self.markerHandler = MarkerHandler()
 
@@ -209,6 +218,14 @@ class Interaction:
             return ['Action ' + str(self.session.current_action_index) +
                     RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
     
+    def set_step_to_scan(self, scan_code):
+        if (Interaction._is_programming):
+            self.session.set_step_scan(scan_code)
+            return [RobotSpeech.LAST_POSE_REPEATED, GazeGoal.NOD]
+        else:
+            return ['Action ' + str(self.session.current_action_index) +
+                    RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
+
     def undo(self):
         '''Undoes the effect of the previous command'''
         if (self._undo_function == None):
@@ -321,7 +338,6 @@ class Interaction:
             step = Action()
             step.type = Action.POSE
             step.arms = self._get_arm_states()
-            step.target = ObjectType(0)
             self.session.add_step_to_action(step)
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
@@ -358,7 +374,7 @@ class Interaction:
             if (self.session.n_frames() > 0):
                 #self.session.save_current_action()
                 action = self.session.get_current_action()
-                self.robot.start_execution(action)
+                self.robot.start_execution(action, self.world)
                 #if (action.is_object_required()):
                     #if (self.world.update_object_pose()):
                         #self.session.get_current_action().update_objects(
@@ -403,6 +419,7 @@ class Interaction:
             switch_command = "switch-to-action "
             name_command = "name-action "
             add_action_commnad = "add-action-step "
+            set_step_relativity = "set-step-relativity"
             if (switch_command in command.command):
                 '''switch to action command recognized'''
                 action_name = command.command[
@@ -440,7 +457,40 @@ class Interaction:
                 else:
                     Response(partial(Interaction.empty_response,
                         [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
-                    
+            elif (set_step_relativity in command.command):
+                '''set what the step is relative to command recognized'''
+                new_rel_arm = command.command[len(set_step_relativity):]
+
+                arm_ind = 0 if new_rel_arm.startswith("-right") else 1
+                new_rel = new_rel_arm[len(["-right ", "-left "][arm_ind]):]
+
+                if (len(new_rel) == 0):
+                    Response(partial(Interaction.empty_response,
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
+                else:
+                    desc = None
+                    all_descs = [lmark.descriptor for lmark in 
+                        self.world.get_landmarks()]
+                    if (new_rel.isdigit()):
+                        dInd = int(new_rel)
+                        if (dInd < len(all_descs)):
+                            desc = all_descs[dInd]
+                    else:
+                        try:
+                            ind = [desc.friendly_name for desc in all_descs].index(new_rel)
+                            desc = all_descs[ind]
+                        except ValueError:
+                            pass
+                    if (desc == None):
+                        Response(partial(Interaction.empty_response,
+                            [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])).respond()
+                    else:
+                        prev_mark = self.world.find_landmark(self.session.get_current_action().landmark_types[arm_ind])
+                        new_mark = self.world.find_landmark(desc)
+                        self.session.set_action_landmark_type(desc, arm_ind, prev_mark, new_mark)
+                        Response(partial(Interaction.empty_response,
+                            [RobotSpeech.SWITCH_SKILL,
+                            GazeGoal.NOD])).respond()
             else:
                 rospy.logwarn('\033[32m This command (' + command.command
                               + ') is unknown. \033[0m')
@@ -490,15 +540,16 @@ class Interaction:
 
     #     self.robot.status = ExecutionStatus.NOT_EXECUTING
 
-    def record_object_pose(self):
+    def record_object_pose(self, move_arms):
         '''Makes the robot look for a table and objects'''
-        if (self.world.update_object_pose()):
-            if (self.session.n_actions() > 0):
-                self.session.get_current_action().update_objects(
-                                            self.world.get_frame_list())
-            return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
-        else:
-            return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+        if move_arms:
+            self.robot.hands_up()
+        self.world.scan_landmarks()
+        self.session.update_object_names([lmark.descriptor.friendly_name for lmark in 
+                self.world.get_landmarks()])
+        if move_arms:
+            self.robot.hands_down()
+        return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
 
     def save_experiment_state(self):
         '''Saves session state'''

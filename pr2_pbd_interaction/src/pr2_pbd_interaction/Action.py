@@ -15,6 +15,9 @@ import yaml
 # 3rd party imports (e.g. ROS).
 import rospy
 
+from Landmark import Landmark
+from RobotDescriptor import RobotDescriptor
+
 class Action:
     '''Pthon representation of a programmed action.
 
@@ -41,6 +44,12 @@ class Action:
     GRIPPER = 2
     TRAJECTORY = 3
 
+    # The list of possible scan operations to do before the actions is
+    # executed
+    NO_SCAN = 0
+    SCAN = 1
+    SCAN_MOVE_ARMS = 2
+
     ####################################################################
     # INSTANCE METHODS
     ####################################################################
@@ -58,6 +67,9 @@ class Action:
         self.id = act_id
         self.type = act_type
         self.name = act_name
+        self.landmark_types = [RobotDescriptor(None), 
+            RobotDescriptor(None)]
+        self.scan_code = Action.NO_SCAN
 
     def save(self):
         '''Saves action to file with its id.
