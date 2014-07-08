@@ -114,9 +114,8 @@ class  World(object):
         maxInd = 0
         for i in range(1, len(self.landmarks)):
             newVal = descriptor.compare(self.landmarks[i].descriptor)
-            rospy.loginfo(newVal)
             if (newVal > maxVal):
                 maxVal = newVal
                 maxInd = i
-                
+
         return self.landmarks[maxInd]
