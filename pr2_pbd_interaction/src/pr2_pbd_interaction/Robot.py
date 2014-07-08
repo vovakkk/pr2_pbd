@@ -17,17 +17,14 @@ class Robot:
     CLOSED = 0
     OPENED = 1
     SIDE_PREFIX = ["r", "l"]
+    ARM_JOINTS = ["r_wrist_roll_link", "l_wrist_roll_link"]
 
     def __init__(self):
         #right - 0, left - 1
         rospy.loginfo("Initializing moveit")
         moveit_commander.roscpp_initialize(sys.argv)
         '''initialize moveit'''
-        self.robot = moveit_commander.RobotCommander()
-        self.scene = moveit_commander.PlanningSceneInterface()
-        self.arms = [moveit_commander.MoveGroupCommander("right_arm"),
-            moveit_commander.MoveGroupCommander("left_arm"),
-            moveit_commander.MoveGroupCommander("arms")]
+        self.arms = moveit_commander.MoveGroupCommander("arms")
 
         '''is_exec - is the robot currently executing an action'''
         self.is_exec = False
@@ -61,59 +58,34 @@ class Robot:
 
     '''move arms to pose synchronously'''
     def _move_to_pose(self, arms):
-        # x = [arms[0].pose.position.x,
-        #   arms[0].pose.position.y,arms[0].pose.position.z,
-        #   arms[0].pose.orientation.x, arms[0].pose.orientation.y,
-        #   arms[0].pose.orientation.z, arms[0].pose.orientation.w]
-        # rospy.loginfo(x)
-        # self.arms[0].set_pose_target(x)
-        # self.arms[0].go()
+        for arm_ind in range(0, 2):
+            self.arms.set_pose_target(arms[arm_ind], Robot.ARM_JOINTS[arm_ind])
 
-        self.arms[0].set_pose_target(arms[0])
-        plan1 = self.arms[0].plan()
-        self.arms[1].set_pose_target(arms[1])
-        plan2 = self.arms[1].plan()
-
-        # self.arms[0].go()
-        # self.arms[1].go()
-        '''generate plan for each arm'''
-        endPose1 = plan1.joint_trajectory.points[len(
-            plan1.joint_trajectory.points) - 1]
-        endPose2 = plan2.joint_trajectory.points[len(
-            plan2.joint_trajectory.points) - 1]
-        endPoses = {}
-        '''combine plan for both arms'''
-        for i in range(0, len(plan1.joint_trajectory.joint_names) - 1):
-            endPoses[plan1.joint_trajectory.joint_names[i]] = endPose1.positions[i]
-            endPoses[plan2.joint_trajectory.joint_names[i]] = endPose2.positions[i]
-        
-        # rospy.loginfo(endPoses)
-        '''EXECUTE!!!'''
-        self.arms[2].set_joint_value_target(endPoses)
-        self.arms[2].go()
+        self.arms.go()
 
     '''execute a trajectory synchronously'''
     def _execute_trajectory(self, poses):
-        for a_ind in [0, 1]:
-            '''speed up the execution, since each pose is calculated seperately'''
-            def speedUp(plan):
-                new_plan = moveit_msgs.msg.RobotTrajectory()
-                new_plan.joint_trajectory = trajectory_msgs.msg.JointTrajectory()
-                new_plan.joint_trajectory.points = map(
-                    lambda t: trajectory_msgs.msg.JointTrajectoryPoint(
-                        map(lambda i: i, t[1].positions),
-                        map(lambda vel: vel * 20, t[1].velocities),
-                        map(lambda a: a * 20, t[1].accelerations),
-                        map(lambda i: i, t[1].effort),
-                        t[1].time_from_start / 2)
-                        , filter(lambda (i, v): i % 10 == 0, enumerate(
-                        plan.joint_trajectory.points)))
-                new_plan.joint_trajectory.joint_names = map(lambda i: i, 
-                    plan.joint_trajectory.joint_names)
-                return new_plan
-            plan = self.arms[a_ind].compute_cartesian_path([p[a_ind].pose for p in poses],
-                1, 100)[0]
-            self.arms[a_ind].execute(speedUp(plan))
+        pass
+        # for a_ind in [0, 1]:
+        #     '''speed up the execution, since each pose is calculated seperately'''
+        #     def speedUp(plan):
+        #         new_plan = moveit_msgs.msg.RobotTrajectory()
+        #         new_plan.joint_trajectory = trajectory_msgs.msg.JointTrajectory()
+        #         new_plan.joint_trajectory.points = map(
+        #             lambda t: trajectory_msgs.msg.JointTrajectoryPoint(
+        #                 map(lambda i: i, t[1].positions),
+        #                 map(lambda vel: vel * 20, t[1].velocities),
+        #                 map(lambda a: a * 20, t[1].accelerations),
+        #                 map(lambda i: i, t[1].effort),
+        #                 t[1].time_from_start / 2)
+        #                 , filter(lambda (i, v): i % 10 == 0, enumerate(
+        #                 plan.joint_trajectory.points)))
+        #         new_plan.joint_trajectory.joint_names = map(lambda i: i, 
+        #             plan.joint_trajectory.joint_names)
+        #         return new_plan
+        #     plan = self.arms[a_ind].compute_cartesian_path([p[a_ind].pose for p in poses],
+        #         1, 100)[0]
+        #     self.arms[a_ind].execute(speedUp(plan))
             
     '''execute the action (private method)'''
     def _execute_action(self, action, world):
@@ -129,9 +101,6 @@ class Robot:
                     self._execute_action(act, world)
             elif (action.type == Action.POSE):
                 best_landmarks = map(world.find_landmark, action.landmark_types)
-                rospy.loginfo("--------------------")
-                rospy.loginfo(yaml.dump(best_landmarks[0]))
-                rospy.loginfo("--------------------")
                 def mod_pose((pose, mark)):
                     return Pose(Point(
                         pose.pose.position.x + mark.pose.position.x,
@@ -139,7 +108,6 @@ class Robot:
                         pose.pose.position.z + mark.pose.position.z),
                         pose.pose.orientation)
                 target_pose = map(mod_pose, zip(action.arms, best_landmarks))
-                rospy.loginfo(target_pose[0])
                 self._move_to_pose(target_pose)
             elif (action.type == Action.GRIPPER):
                 pass
@@ -157,13 +125,11 @@ class Robot:
     '''stop executing the action'''
     def stop_execution(self):
         self.is_exec = False
-        # self.arms[0].stop()
-        # self.arms[1].stop()
-        self.arms[2].stop()
+        self.arms.stop()
 
     '''get current arm states'''
     def get_arm_state(self):
-        return [self.arms[a_ind].get_current_pose() for a_ind in [0, 1]]
+        return [self.arms.get_current_pose(arm_joint) for arm_joint in Robot.ARM_JOINTS]
 
     def hands_up(self):
         '''Moves hands out of the way for scanning'''

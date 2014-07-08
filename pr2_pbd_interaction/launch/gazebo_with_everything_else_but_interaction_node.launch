@@ -13,5 +13,8 @@
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
 	<include file="$(find pr2_pbd_http)/launch/http_server.launch" />
+<!-- 
+	<include file="$(find pr2_interactive_controller)/launch/web_launch.launch"/> -->
 
+	<include file="$(find tabletop_object_detector)/launch/tabletop_segmentation.launch"/>
 </launch>

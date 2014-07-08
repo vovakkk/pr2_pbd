@@ -30,6 +30,19 @@ var expListenerSrvCli = new ROSLIB.Service({
 window.lockUpdate = false;
 
 window.addEventListener("load", function() {
+	var loadPageVar = function (sVar) {
+	  return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(sVar).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+	};
+
+	if (loadPageVar("visual").toLowerCase() == "true") {
+		var iFrame = document.createElement("iframe");
+		iFrame.src = "visual.html";
+		iFrame.style.width = "100%";
+		iFrame.style.height = "600px";
+		document.querySelector("#visualSection").appendChild(iFrame);
+	}
+
+
 	//hook up buttons with com attribute to speech commands
 	[].slice.call(document.querySelectorAll("button[com]")).forEach(function(el) {
 		el.addEventListener("click", function() {

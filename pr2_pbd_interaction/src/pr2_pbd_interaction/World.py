@@ -41,7 +41,6 @@ class  World(object):
                 are forced to match of one of the descriptors provided
         '''
         #look down
-        rospy.loginfo("looking down")
         client = actionlib.SimpleActionClient('/head_traj_controller/point_head_action', PointHeadAction)
         client.wait_for_server()
         goal = PointHeadGoal()
@@ -54,7 +53,6 @@ class  World(object):
         goal.max_velocity = 1.0
         client.send_goal(goal)
         client.wait_for_result()
-        rospy.loginfo("done")
 
         rospy.wait_for_service(self.segmentation_service)
         try:
@@ -112,19 +110,13 @@ class  World(object):
             type: Landmark
             The best matched landmark
         '''
-        rospy.loginfo("Comparing robot with self")
-        rospy.loginfo(str(RobotDescriptor(None).compare(RobotDescriptor(None))))
-        rospy.loginfo("Finding landmark " + str(descriptor))
         maxVal = descriptor.compare(self.landmarks[0].descriptor)
         maxInd = 0
         for i in range(1, len(self.landmarks)):
-            rospy.loginfo("checking landmark " + str(self.landmarks[i].descriptor))
             newVal = descriptor.compare(self.landmarks[i].descriptor)
             rospy.loginfo(newVal)
             if (newVal > maxVal):
                 maxVal = newVal
                 maxInd = i
-
-        rospy.loginfo("Found landmark type " + str(self.landmarks[maxInd].descriptor) + " with score " + str(maxVal))
-
+                
         return self.landmarks[maxInd]
