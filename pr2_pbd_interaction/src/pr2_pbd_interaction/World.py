@@ -40,6 +40,7 @@ class  World(object):
             force_types ([LandmarkDescriptor], optional): the scanned objects
                 are forced to match of one of the descriptors provided
         '''
+        rospy.loginfo("looking down")
         #look down
         client = actionlib.SimpleActionClient('/head_traj_controller/point_head_action', PointHeadAction)
         client.wait_for_server()
@@ -54,10 +55,12 @@ class  World(object):
         client.send_goal(goal)
         client.wait_for_result()
 
+        rospy.loginfo("waiting for segmentation service")
         rospy.wait_for_service(self.segmentation_service)
         try:
             get_segmentation = rospy.ServiceProxy(self.segmentation_service, TabletopSegmentation)
             resp = get_segmentation()
+            rospy.loginfo("Adding landmarks")
             self.landmarks = []
             # add the robot
             self.landmarks.append(Landmark(RobotDescriptor(None), 
@@ -67,8 +70,8 @@ class  World(object):
             self.landmarks.append(Landmark(TableDescriptor(resp.table), 
                 resp.table.pose.pose))
             def make_landmark(clusterInd):
-                cluster = clusterInd[0]
-                ind = clusterInd[1]
+                ind = clusterInd[0]
+                cluster = clusterInd[1]
                 points = cluster.points
                 if (len(points) == 0):
                     return Point(0, 0, 0)
@@ -86,8 +89,10 @@ class  World(object):
                     Pose(Point((minX + maxX) / 2, (minY + maxY) / 2,
                         (minZ + maxZ) / 2), Quaternion(0, 0, 0, 1)), 
                     Point(maxX - minX, maxY - minY, maxZ - minZ))
-            self.landmarks += [make_landmark(cluster)
-                for cluster in zip(resp.clusters, range(0, len(resp.clusters)))]
+
+            self.landmarks += [
+                make_landmark(cluster)
+                for cluster in enumerate(resp.clusters)]
         except rospy.ServiceException, e:
             print "Call to segmentation service failed: %s"%e
 

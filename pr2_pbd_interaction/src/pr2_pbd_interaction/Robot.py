@@ -12,19 +12,22 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 class Robot:
     '''class for moving arms and getting arm states'''
+    RIGHT = 0
+    LEFT = 1
     RELAXED = 0
     HOLD = 1
     CLOSED = 0
     OPENED = 1
     SIDE_PREFIX = ["r", "l"]
     ARM_JOINTS = ["r_wrist_roll_link", "l_wrist_roll_link"]
+    STARTING_GRIPPER_STATES = [CLOSED, CLOSED]
 
     def __init__(self):
         #right - 0, left - 1
         rospy.loginfo("Initializing moveit")
         moveit_commander.roscpp_initialize(sys.argv)
         '''initialize moveit'''
-        self.arms = moveit_commander.MoveGroupCommander("arms")
+        # self.arms = moveit_commander.MoveGroupCommander("arms")
 
         '''is_exec - is the robot currently executing an action'''
         self.is_exec = False
@@ -38,10 +41,20 @@ class Robot:
         self.gipper_pubs = [rospy.Publisher('/r_gripper_controller/command', Pr2GripperCommand),
             rospy.Publisher('/l_gripper_controller/command', Pr2GripperCommand)]
 
+        '''set initial gripper states'''
+        self.gripper_states = Robot.STARTING_GRIPPER_STATES
+        # for arm_ind, state in enumerate(Robot.STARTING_GRIPPER_STATES):
+        #     self.set_gripper_state(arm_ind, state)
+
     '''set the gripper states'''
     def set_gripper_state(self, arm_index, g_state):
+        # rospy.loginfo("here")
         self.gipper_pubs[arm_index].publish(Pr2GripperCommand(0.1 * g_state,100))
+        # self.gripper_states[arm_index] = g_state
         return True
+
+    def get_gripper_states():
+        return self.gripper_states
 
     '''freze/relax the arms'''
     def set_arm_mode(self, arm_index, arm_mode):#freese/unfreese
@@ -110,7 +123,8 @@ class Robot:
                 target_pose = map(mod_pose, zip(action.arms, best_landmarks))
                 self._move_to_pose(target_pose)
             elif (action.type == Action.GRIPPER):
-                pass
+                for arm_ind, g_state in enumerate(self.gripper_states):
+                    self.set_gripper_state(arm_ind, g_state)
             elif (action.type == Action.TRAJECTORY):
                 self._execute_trajectory(action.poses)
 

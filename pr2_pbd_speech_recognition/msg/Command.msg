@@ -32,4 +32,5 @@ string SET_STEP_RELATIVITY_LEFT = set-step-relativity-left
 string SET_STEP_TO_SCAN = set-step-to-scan
 string SET_STEP_TO_NO_SCAN = set-step-to-no-scan
 string SET_STEP_TO_SCAN_MOVE_ARMS = set-step-to-scan-move-arms
+string ADD_GRIPPER_STEP = add-gripper-step
 string command

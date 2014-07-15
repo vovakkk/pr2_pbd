@@ -53,19 +53,19 @@ class Interaction:
         self.responses = {
             Command.TEST_MICROPHONE: Response(partial(Interaction.empty_response,
                                 [RobotSpeech.TEST_RESPONSE, GazeGoal.NOD])),
-            Command.RELAX_RIGHT_ARM: Response(partial(self.relax_arm, 0)),
-            Command.RELAX_LEFT_ARM: Response(partial(self.relax_arm, 1)),
-            Command.OPEN_RIGHT_HAND: Response(partial(self.open_hand, 0)),
-            Command.OPEN_LEFT_HAND: Response(partial(self.open_hand, 1)),
-            Command.CLOSE_RIGHT_HAND: Response(partial(self.close_hand, 0)),
-            Command.CLOSE_LEFT_HAND: Response(partial(self.close_hand, 1)),
+            Command.RELAX_RIGHT_ARM: Response(partial(self.relax_arm, Robot.RIGHT)),
+            Command.RELAX_LEFT_ARM: Response(partial(self.relax_arm, Robot.LEFT)),
+            Command.OPEN_RIGHT_HAND: Response(partial(self.set_hand, Robot.RIGHT, Robot.OPENED)),
+            Command.OPEN_LEFT_HAND: Response(partial(self.set_hand, Robot.LEFT, Robot.CLOSED)),
+            Command.CLOSE_RIGHT_HAND: Response(partial(self.set_hand, Robot.RIGHT, Robot.OPENED)),
+            Command.CLOSE_LEFT_HAND: Response(partial(self.set_hand, Robot.LEFT, Robot.CLOSED)),
             Command.STOP_EXECUTION: Response(self.stop_execution),
             Command.UNDO: Response(self.undo),
             Command.DELETE_ALL_STEPS: Response(self.delete_all_steps),
             Command.DELETE_LAST_STEP: Response(self.delete_last_step),
             Command.REPEAT_LAST_STEP: Response(self.repeat_step),
-            Command.FREEZE_RIGHT_ARM: Response(partial(self.freeze_arm, 0)),
-            Command.FREEZE_LEFT_ARM: Response(partial(self.freeze_arm, 1)),
+            Command.FREEZE_RIGHT_ARM: Response(partial(self.freeze_arm, Robot.RIGHT)),
+            Command.FREEZE_LEFT_ARM: Response(partial(self.freeze_arm, Robot.LEFT)),
             Command.CREATE_NEW_ACTION: Response(self.create_action),
             Command.EXECUTE_ACTION: Response(self.execute_action),
             Command.NEXT_ACTION: Response(self.next_action),
@@ -84,7 +84,8 @@ class Interaction:
             Command.SET_STEP_TO_NO_SCAN: Response(partial(self.set_step_to_scan,
                                         Action.NO_SCAN)),
             Command.SET_STEP_TO_SCAN_MOVE_ARMS: Response(partial(self.set_step_to_scan,
-                                        Action.SCAN_MOVE_ARMS))
+                                        Action.SCAN_MOVE_ARMS)),
+            Command.ADD_GRIPPER_STEP: Response(self.save_gripper_step)
         }
 
 
@@ -93,30 +94,13 @@ class Interaction:
 
         rospy.loginfo('Interaction initialized.')
 
-    def open_hand(self, arm_index):
-        '''Opens gripper on the indicated side'''
-        if self.robot.set_gripper_state(arm_index, Robot.OPENED):
-            speech_response = Response.open_responses[arm_index]
-            # if (Interaction._is_programming):
-            #     self.save_gripper_step(arm_index, Robot.OPENED)
-            #     speech_response = (speech_response + ' ' +
-            #                        RobotSpeech.STEP_RECORDED)
-            return [speech_response, Response.glance_actions[arm_index]]
+    def set_hand(self, arm_index, state):
+        '''sets the gripepr state'''
+        if self.robot.set_gripper_state(arm_index, state):
+            return [(Response.open_responses if state == Robot.OPEN  else
+                Response.close_responses)[arm_index], Response.glance_actions[arm_index]]
         else:
             return [Response.already_open_responses[arm_index],
-                    Response.glance_actions[arm_index]]
-
-    def close_hand(self, arm_index):
-        '''Closes gripper on the indicated side'''
-        if self.robot.set_gripper_state(arm_index, Robot.CLOSED):
-            speech_response = Response.close_responses[arm_index]
-            # if (Interaction._is_programming):
-            #     self.save_gripper_step(arm_index, Robot.CLOSED)
-            #     speech_response = (speech_response + ' ' +
-            #                        RobotSpeech.STEP_RECORDED)
-            return [speech_response, Response.glance_actions[arm_index]]
-        else:
-            return [Response.already_closed_responses[arm_index],
                     Response.glance_actions[arm_index]]
 
     def relax_arm(self, arm_index):
@@ -251,24 +235,13 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
 
-    def save_gripper_step(self, arm_index, gripper_state):
+    def save_gripper_step(self):
         '''Saves an action step that involves a gripper state change'''
         if (Interaction._is_programming):
             act_step = Action()
             act_step.type = Action.GRIPPER
-            act_step.gripper_state = gripper_state
-            act_step.arm_index = arm_index
+            act_step.gripper_states = self.robot.get_gripper_states()
             self.session.add_step_to_action(act_step)
-            #states = self._get_arm_states()
-            #step = ActionStep()
-            #step.type = ActionStep.ARM_TARGET
-            #step.armTarget = ArmTarget(states[0], states[1], 0.2, 0.2)
-            #actions = [self.robot.get_gripper_state(0),
-                        #self.robot.get_gripper_state(1)]
-            #actions[arm_index] = gripper_state
-            #step.gripperAction = GripperAction(actions[0], actions[1])
-            #self.session.add_step_to_action(step,
-                                            #self.world.get_frame_list())
 
     def start_recording(self):
         '''Starts recording continuous motion'''
@@ -544,7 +517,9 @@ class Interaction:
         '''Makes the robot look for a table and objects'''
         if move_arms:
             self.robot.hands_up()
+            rospy.loginfo("Moved arms");
         self.world.scan_landmarks()
+        rospy.loginfo("World scanned");
         self.session.update_object_names([lmark.descriptor.friendly_name for lmark in 
                 self.world.get_landmarks()])
         if move_arms:
