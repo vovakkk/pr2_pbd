@@ -61,6 +61,12 @@ class  World(object):
             get_segmentation = rospy.ServiceProxy(self.segmentation_service, TabletopSegmentation)
             resp = get_segmentation()
             rospy.loginfo("Adding landmarks")
+
+            a, b = None, None
+            if (len(self.landmarks) >= 4):
+                a = self.landmarks[2]
+                b = self.landmarks[3]
+
             self.landmarks = []
             # add the robot
             self.landmarks.append(Landmark(RobotDescriptor(None), 
@@ -93,6 +99,12 @@ class  World(object):
             self.landmarks += [
                 make_landmark(cluster)
                 for cluster in enumerate(resp.clusters)]
+
+            if ((len(self.landmarks) >= 4) and (a != None)):
+                rospy.loginfo("a to a" + str(a.descriptor.compare(self.landmarks[2].descriptor)))
+                rospy.loginfo("a to b" + str(a.descriptor.compare(self.landmarks[3].descriptor)))
+                rospy.loginfo("b to a" + str(b.descriptor.compare(self.landmarks[2].descriptor)))
+                rospy.loginfo("b to b" + str(b.descriptor.compare(self.landmarks[3].descriptor)))
         except rospy.ServiceException, e:
             print "Call to segmentation service failed: %s"%e
 

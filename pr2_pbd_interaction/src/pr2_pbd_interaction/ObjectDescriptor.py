@@ -136,6 +136,6 @@ class ObjectDescriptor:
         '''
         comp = lambda (ar): reduce(operator.add, map(abs, map(lambda (a, b): a - b, 
             zip(ar, self.descVals[1:]))), 0)
-        return ((100 - abs(descriptor.descVals[0] - self.descVals[0]) * 30 +
+        return ((100 - abs(descriptor.descVals[0] - self.descVals[0]) * 30 -
             min(comp(descriptor.descVals[1:]),comp(descriptor.descVals[-2::-1])))
             if isinstance(descriptor, ObjectDescriptor) else -1)
