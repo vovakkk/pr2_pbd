@@ -27,7 +27,7 @@ class Robot:
         rospy.loginfo("Initializing moveit")
         moveit_commander.roscpp_initialize(sys.argv)
         '''initialize moveit'''
-        # self.arms = moveit_commander.MoveGroupCommander("arms")
+        self.arms = moveit_commander.MoveGroupCommander("arms")
 
         '''is_exec - is the robot currently executing an action'''
         self.is_exec = False
